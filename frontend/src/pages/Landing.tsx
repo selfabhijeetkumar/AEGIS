@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Suspense, lazy } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy, ErrorInfo, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
@@ -9,6 +9,33 @@ import {
 const HolographicShield = lazy(() => import('../components/HolographicShield'));
 
 const EASE = [0.16, 1, 0.3, 1] as const;
+
+/* ===== Fallback components for 3D shield ===== */
+function StaticShieldFallback() {
+  return (
+    <div className="flex items-center justify-center w-full h-full">
+      <svg viewBox="0 0 100 120" className="w-48 h-48 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)]">
+        <path d="M50 5 L90 25 L90 60 C90 90 50 115 50 115 C50 115 10 90 10 60 L10 25 Z" fill="none" stroke="#3b82f6" strokeWidth="2" />
+        <path d="M50 15 L80 30 L80 60 C80 85 50 105 50 105 C50 105 20 85 20 60 L20 30 Z" fill="rgba(6,182,212,0.1)" stroke="#06b6d4" strokeWidth="1" strokeDasharray="4 2" />
+      </svg>
+    </div>
+  );
+}
+
+class ShieldErrorBoundary extends React.Component<{ children: ReactNode, fallback: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode, fallback: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("HolographicShield error caught:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 /* ===== Animated counter (CHANGE-16) ===== */
 function AnimatedCounter({ target, suffix = '', duration = 1500 }: { target: number; suffix?: string; duration?: number }) {
@@ -256,11 +283,13 @@ export default function Landing() {
             transition={{ delay: 0.5, duration: 1.5, ease: EASE }}
             className="hidden lg:flex items-center justify-center relative h-[600px]"
           >
-            <Suspense fallback={
-              <div className="w-32 h-32 rounded-full border-2 border-blue-500/20 animate-pulse" />
-            }>
-              <HolographicShield />
-            </Suspense>
+            <ShieldErrorBoundary fallback={<StaticShieldFallback />}>
+              <Suspense fallback={
+                <div className="w-32 h-32 rounded-full border-2 border-blue-500/10 animate-pulse" style={{ background: 'rgba(10,15,30,0.5)' }} />
+              }>
+                <HolographicShield />
+              </Suspense>
+            </ShieldErrorBoundary>
           </motion.div>
         </div>
       </motion.section>

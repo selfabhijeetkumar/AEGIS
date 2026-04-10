@@ -24,44 +24,61 @@ function ShieldMesh() {
 
   // Heraldic military shield — flat top, straight sides, curved bottom to sharp point
   const shieldShape = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(-1.5, 1.8);
-    s.lineTo(1.5, 1.8);
-    s.lineTo(1.5, 0.2);
-    s.bezierCurveTo(1.5, -0.4, 0.8, -1.1, 0, -1.8);
-    s.bezierCurveTo(-0.8, -1.1, -1.5, -0.4, -1.5, 0.2);
-    s.closePath();
-    return s;
+    try {
+      const s = new THREE.Shape();
+      s.moveTo(-1.5, 1.8);
+      s.lineTo(1.5, 1.8);
+      s.lineTo(1.5, 0.2);
+      s.bezierCurveTo(1.5, -0.4, 0.8, -1.1, 0, -1.8);
+      s.bezierCurveTo(-0.8, -1.1, -1.5, -0.4, -1.5, 0.2);
+      s.closePath();
+      return s;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
   }, []);
 
-  const extrudeSettings = useMemo(() => ({
-    depth: 0.3,
-    bevelEnabled: true,
-    bevelThickness: 0.05,
-    bevelSize: 0.03,
-    bevelSegments: 3,
-  }), []);
+  const extrudeSettings = useMemo(() => {
+    try {
+      return {
+        depth: 0.3,
+        bevelEnabled: true,
+        bevelThickness: 0.05,
+        bevelSize: 0.03,
+        bevelSegments: 3,
+      };
+    } catch {
+      return { depth: 0 };
+    }
+  }, []);
 
   useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    if (groupRef.current) {
-      // Slow Y-axis rocking + gentle float
-      groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.15 + mouse.x;
-      groupRef.current.rotation.x = Math.sin(t * 0.3) * 0.05 + mouse.y;
-      groupRef.current.position.y = Math.sin(t * 0.6) * 0.1;
-    }
-    if (glowRef.current) {
-      const mat = glowRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.06 + Math.sin(t * 1.5) * 0.06;
-    }
-    if (scanRef.current) {
-      scanRef.current.position.y = Math.sin(t * 2) * 1.5;
-    }
-    if (diamondRef.current) {
-      diamondRef.current.rotation.y = t * 0.8;
-      diamondRef.current.rotation.x = t * 0.3;
+    try {
+      const t = state.clock.elapsedTime;
+      if (groupRef.current) {
+        // Slow Y-axis rocking + gentle float
+        groupRef.current.rotation.y = Math.sin(t * 0.4) * 0.15 + mouse.x;
+        groupRef.current.rotation.x = Math.sin(t * 0.3) * 0.05 + mouse.y;
+        groupRef.current.position.y = Math.sin(t * 0.6) * 0.1;
+      }
+      if (glowRef.current) {
+        const mat = glowRef.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.06 + Math.sin(t * 1.5) * 0.06;
+      }
+      if (scanRef.current) {
+        scanRef.current.position.y = Math.sin(t * 2) * 1.5;
+      }
+      if (diamondRef.current) {
+        diamondRef.current.rotation.y = t * 0.8;
+        diamondRef.current.rotation.x = t * 0.3;
+      }
+    } catch (err) {
+      // Ignore animate frame crashes to prevent app teardown
     }
   });
+
+  if (!shieldShape) return null; // Shape failed to initialize, prevent render crash
 
   return (
     <group ref={groupRef} position={[0, 0, 0]}>
