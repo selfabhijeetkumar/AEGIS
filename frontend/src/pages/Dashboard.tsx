@@ -430,7 +430,24 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!scanId) return;
-    getScanResults(scanId).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+
+    if (scanId === 'demo-cicids-2017') {
+      // Load mock data from session storage for the demo
+      const stored = sessionStorage.getItem(`aegis-scan-${scanId}`);
+      if (stored) {
+        setData(JSON.parse(stored));
+        setLoading(false);
+      } else {
+        // Fallback if not in session storage
+        import('../mockData').then(({ MOCK_SCAN_RESULT }) => {
+          setData(MOCK_SCAN_RESULT);
+          setLoading(false);
+        });
+      }
+    } else {
+      // Real API call for actual uploads
+      getScanResults(scanId).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+    }
   }, [scanId]);
 
   const handleSelectThreat = useCallback((t: ThreatEvent) => {
