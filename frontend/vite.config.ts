@@ -7,5 +7,8 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: 'dist'
+  },
+  optimizeDeps: {
+    include: ['three', '@react-three/fiber', '@react-three/drei']
   }
 })
