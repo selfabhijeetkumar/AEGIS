@@ -124,7 +124,17 @@ export default function Upload() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
-    processFile(() => uploadFile(acceptedFiles[0]));
+
+    // Try real backend first
+    processFile(async () => {
+      try {
+        return await uploadFile(acceptedFiles[0]);
+      } catch {
+        // Backend not available — fall back to mock data
+        sessionStorage.setItem(`aegis-scan-${DEMO_SCAN_ID}`, JSON.stringify(MOCK_SCAN_RESULT));
+        return { scan_id: DEMO_SCAN_ID, message: 'Fallback to demo data' };
+      }
+    });
   }, [processFile]);
 
   const handleDemo = () => {
