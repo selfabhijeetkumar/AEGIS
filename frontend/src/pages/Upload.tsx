@@ -6,7 +6,7 @@ import {
   Lock, BarChart3, Brain, Target, AlertTriangle, Upload as UploadIcon,
   Zap, Cpu, Shield
 } from 'lucide-react';
-import { uploadFile, runDemo } from '../services/api';
+import { uploadFile } from '../services/api';
 import { DEMO_SCAN_ID, MOCK_SCAN_RESULT } from '../mockData';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
