@@ -9,9 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
-import { MapContainer, TileLayer, Marker as LeafletMarker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import ExpandedMapModal from '../components/ExpandedMapModal';
 import { getScanResults, type ScanResult, type ThreatEvent } from '../services/api';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -858,74 +856,12 @@ export default function Dashboard() {
           </motion.div>
 
           {/* ===== FULLSCREEN MAP MODAL ===== */}
-          <AnimatePresence>
-            {mapModalOpen && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-50 flex flex-col"
-                style={{ background: 'rgba(5,10,24,0.95)', backdropFilter: 'blur(24px)' }}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div className="flex items-center gap-3">
-                    <Globe size={18} className="text-blue-400" />
-                    <span className="font-mono text-xs tracking-[0.15em] uppercase text-slate-400">IP GEOLOCATION — THREAT ORIGIN MAPPING</span>
-                    <span className="badge-critical ml-2">{attackerMarkers.length} ORIGINS</span>
-                  </div>
-                  <button
-                    onClick={() => setMapModalOpen(false)}
-                    className="p-2 rounded-lg hover:bg-white/[0.08] text-slate-400 hover:text-white transition-colors"
-                    aria-label="Close fullscreen map"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                {/* Leaflet Map */}
-                <div className="flex-1">
-                  <MapContainer
-                    center={[20, 0]}
-                    zoom={2}
-                    scrollWheelZoom={true}
-                    zoomControl={true}
-                    dragging={true}
-                    style={{ width: '100%', height: '100%' }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    />
-                    {attackerMarkers.map((m, i) => {
-                      const markerColor = SEVERITY_COLORS[m.severity] || '#ef4444';
-                      const icon = L.divIcon({
-                        className: '',
-                        html: `<div style="width:16px;height:16px;border-radius:50%;background:${markerColor};box-shadow:0 0 0 4px ${markerColor}4D, 0 0 12px ${markerColor};animation:leafletPulse 2s infinite;"></div>`,
-                        iconSize: [16, 16],
-                        iconAnchor: [8, 8],
-                      });
-                      return (
-                        <LeafletMarker key={i} position={[m.lat, m.lon]} icon={icon}>
-                          <Popup>
-                            <div style={{ minWidth: 200, fontFamily: 'JetBrains Mono, monospace' }}>
-                              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8, color: '#f8fafc' }}>{m.country}</div>
-                              <div style={{ fontSize: 12, color: '#22d3ee', marginBottom: 4 }}>{m.source_ip}</div>
-                              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>{m.threat_type}</div>
-                              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: `${markerColor}25`, color: markerColor, border: `1px solid ${markerColor}50` }}>{m.severity}</span>
-                                <span style={{ fontSize: 10, color: '#3b82f6' }}>{m.mitre_code}</span>
-                              </div>
-                              <div style={{ fontSize: 10, color: '#64748b' }}>{m.bytes_transferred?.toLocaleString()} bytes</div>
-                            </div>
-                          </Popup>
-                        </LeafletMarker>
-                      );
-                    })}
-                  </MapContainer>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {mapModalOpen && (
+            <ExpandedMapModal
+              attackerMarkers={attackerMarkers}
+              onClose={() => setMapModalOpen(false)}
+            />
+          )}
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="aegis-card">
             <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 flex items-center gap-2 text-slate-500">
