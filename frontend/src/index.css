@@ -1,4 +1,3 @@
-@import 'leaflet/dist/leaflet.css';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
@@ -629,42 +628,3 @@ p:last-child { margin-bottom: 0; }
     stroke-width: 0.2;
   }
 }
-
-/* ===== LEAFLET MAP MARKER PULSE ===== */
-@keyframes leafletPulse {
-  0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
-  70% { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
-  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-}
-
-/* ===== LEAFLET OVERRIDES FOR DARK THEME ===== */
-.leaflet-container {
-  background: #050a18 !important;
-}
-.leaflet-control-zoom a {
-  background: rgba(10,15,30,0.9) !important;
-  color: #94a3b8 !important;
-  border-color: rgba(255,255,255,0.1) !important;
-}
-.leaflet-control-zoom a:hover {
-  background: rgba(59,130,246,0.2) !important;
-  color: #60a5fa !important;
-}
-.leaflet-popup-content-wrapper {
-  background: rgba(10,15,30,0.95) !important;
-  color: #e2e8f0 !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(20px) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
-}
-.leaflet-popup-tip {
-  background: rgba(10,15,30,0.95) !important;
-}
-.leaflet-popup-close-button {
-  color: #64748b !important;
-}
-.leaflet-popup-close-button:hover {
-  color: #f8fafc !important;
-}
-
