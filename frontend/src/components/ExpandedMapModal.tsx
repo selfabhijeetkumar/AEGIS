@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import { X } from 'lucide-react';
 import L from 'leaflet';
@@ -25,6 +25,22 @@ interface ExpandedMapModalProps {
 }
 
 export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedMapModalProps) {
+  // Fix 1: Delay MapContainer render until DOM is fully ready
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Fix 3: Force Leaflet to recalculate dimensions after mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Escape key closes the modal
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -35,10 +51,14 @@ export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedM
   }, [onClose]);
 
   return (
+    // Fix 4: Explicit fixed positioning with 100vw/100vh, not inside overflow:hidden
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
         zIndex: 9999,
         background: 'rgba(0,0,0,0.95)',
         display: 'flex',
@@ -108,75 +128,85 @@ export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedM
         <X size={20} />
       </button>
 
-      {/* Leaflet Map */}
-      <div className="aegis-expanded-map" style={{ width: '100%', height: '90vh', marginTop: '5vh' }}>
-        <MapContainer
-          center={[20, 0]}
-          zoom={2}
-          scrollWheelZoom={true}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {attackerMarkers.map((m, i) => {
-            const color = SEVERITY_COLORS[m.severity] || '#ef4444';
-            const radius = m.severity === 'CRITICAL' ? 10 : m.severity === 'MEDIUM' ? 8 : 6;
-            return (
-              <CircleMarker
-                key={i}
-                center={[m.lat, m.lon]}
-                radius={radius}
-                pathOptions={{
-                  color: color,
-                  fillColor: color,
-                  fillOpacity: 0.7,
-                  weight: 2,
-                  opacity: 0.9,
-                }}
-              >
-                <Popup>
-                  <div style={{ minWidth: 220, fontFamily: "'JetBrains Mono', monospace" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, color: '#1e293b' }}>
-                      {m.country}
+      {/* Leaflet Map — Fix 2: explicit height in vh + minHeight px, not percentage */}
+      <div className="aegis-expanded-map" style={{ width: '100%', height: '85vh', minHeight: '500px', marginTop: '60px' }}>
+        {/* Fix 1: Only render MapContainer when isReady is true */}
+        {isReady ? (
+          <MapContainer
+            center={[20, 0]}
+            zoom={2}
+            scrollWheelZoom={true}
+            style={{ height: '100%', width: '100%' }}
+          >
+            {/* Fix 5: Correct TileLayer URL */}
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {attackerMarkers.map((m, i) => {
+              const color = SEVERITY_COLORS[m.severity] || '#ef4444';
+              const radius = m.severity === 'CRITICAL' ? 10 : m.severity === 'MEDIUM' ? 8 : 6;
+              return (
+                <CircleMarker
+                  key={i}
+                  center={[m.lat, m.lon]}
+                  radius={radius}
+                  pathOptions={{
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.7,
+                    weight: 2,
+                    opacity: 0.9,
+                  }}
+                >
+                  <Popup>
+                    <div style={{ minWidth: 220, fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6, color: '#1e293b' }}>
+                        {m.country}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#0369a1', marginBottom: 4 }}>
+                        IP: {m.source_ip}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>
+                        {m.threat_type}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 999,
+                          background: `${color}25`,
+                          color: color,
+                          border: `1px solid ${color}50`,
+                        }}>
+                          {m.severity}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#3b82f6' }}>{m.mitre_code}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: '#94a3b8' }}>
+                        {m.bytes_transferred?.toLocaleString()} bytes
+                      </div>
                     </div>
-                    <div style={{ fontSize: 12, color: '#0369a1', marginBottom: 4 }}>
-                      IP: {m.source_ip}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#475569', marginBottom: 6 }}>
-                      {m.threat_type}
-                    </div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 999,
-                        background: `${color}25`,
-                        color: color,
-                        border: `1px solid ${color}50`,
-                      }}>
-                        {m.severity}
-                      </span>
-                      <span style={{ fontSize: 10, color: '#3b82f6' }}>{m.mitre_code}</span>
-                    </div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>
-                      {m.bytes_transferred?.toLocaleString()} bytes
-                    </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
-            );
-          })}
-        </MapContainer>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
+        ) : (
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#64748b', letterSpacing: '0.1em' }}>
+              INITIALIZING MAP...
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Legend — bottom-left */}
       <div
         style={{
           position: 'absolute',
-          bottom: 'calc(5vh + 16px)',
+          bottom: 24,
           left: 24,
           zIndex: 10001,
           background: 'rgba(0,0,0,0.8)',
