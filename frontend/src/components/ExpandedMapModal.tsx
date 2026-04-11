@@ -116,8 +116,8 @@ export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedM
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Clear
-      ctx.fillStyle = '#0a0f1e';
+      // Clear — deep ocean blue water
+      ctx.fillStyle = '#0d3b6e';
       ctx.fillRect(0, 0, w, h);
 
       // Draw grid lines
@@ -321,44 +321,43 @@ export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedM
         flexDirection: 'column',
       }}
     >
-      {/* ===== CLOSE BUTTON — top-right, always visible ===== */}
-      <button
-        onClick={onClose}
-        aria-label="Close expanded map"
+      {/* ===== CLOSE BUTTON — top-right, always visible, OUTSIDE canvas ===== */}
+      <div
         style={{
           position: 'absolute',
-          top: 16,
-          right: 16,
+          top: 24,
+          right: 24,
           zIndex: 10000,
-          background: 'rgba(0,0,0,0.8)',
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: 8,
-          padding: '8px 16px',
-          cursor: 'pointer',
-          color: '#ffffff',
-          fontSize: 20,
-          fontWeight: 700,
-          fontFamily: "'JetBrains Mono', monospace",
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.2s ease',
-        }}
-        onMouseEnter={(e) => {
-          const btn = e.currentTarget;
-          btn.style.background = 'rgba(239,68,68,0.8)';
-          btn.style.color = '#ffffff';
-          btn.style.borderColor = 'rgba(239,68,68,0.6)';
-        }}
-        onMouseLeave={(e) => {
-          const btn = e.currentTarget;
-          btn.style.background = 'rgba(0,0,0,0.8)';
-          btn.style.color = '#ffffff';
-          btn.style.borderColor = 'rgba(255,255,255,0.2)';
         }}
       >
-        ✕
-      </button>
+        <button
+          onClick={onClose}
+          aria-label="Close expanded map"
+          style={{
+            background: 'rgba(0,0,0,0.9)',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 8,
+            padding: '8px 16px',
+            cursor: 'pointer',
+            color: '#ffffff',
+            fontSize: 18,
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(239,68,68,0.8)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.9)';
+          }}
+        >
+          ✕ CLOSE
+        </button>
+      </div>
 
       {/* Header bar */}
       <div
