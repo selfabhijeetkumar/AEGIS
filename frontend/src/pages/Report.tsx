@@ -160,11 +160,35 @@ export default function Report() {
     const load = async () => {
       try {
         if (scanId) {
-          const result = await getScanResults(scanId);
-          setData(result);
+          // Try API first
+          try {
+            const result = await getScanResults(scanId);
+            setData(result);
+          } catch {
+            // API failed — try localStorage (set by Dashboard)
+            const stored = localStorage.getItem('aegis_scan_data');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              // Verify it matches the current scanId
+              if (parsed.scan_id === scanId) {
+                setData(parsed);
+              }
+            }
+            // Also try sessionStorage (demo data)
+            if (!stored) {
+              const sessionStored = sessionStorage.getItem(`aegis-scan-${scanId}`);
+              if (sessionStored) {
+                setData(JSON.parse(sessionStored));
+              }
+            }
+          }
         }
-        const hist = await getHistory();
-        setHistory(hist.scans);
+        try {
+          const hist = await getHistory();
+          setHistory(hist.scans);
+        } catch {
+          // History API unavailable — not critical
+        }
       } catch (e) {
         console.error(e);
       }

@@ -435,18 +435,26 @@ export default function Dashboard() {
       // Load mock data from session storage for the demo
       const stored = sessionStorage.getItem(`aegis-scan-${scanId}`);
       if (stored) {
-        setData(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setData(parsed);
+        // Persist to localStorage so Report page can access it
+        localStorage.setItem('aegis_scan_data', JSON.stringify(parsed));
         setLoading(false);
       } else {
         // Fallback if not in session storage
         import('../mockData').then(({ MOCK_SCAN_RESULT }) => {
           setData(MOCK_SCAN_RESULT);
+          localStorage.setItem('aegis_scan_data', JSON.stringify(MOCK_SCAN_RESULT));
           setLoading(false);
         });
       }
     } else {
       // Real API call for actual uploads
-      getScanResults(scanId).then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false));
+      getScanResults(scanId).then(d => {
+        setData(d);
+        localStorage.setItem('aegis_scan_data', JSON.stringify(d));
+        setLoading(false);
+      }).catch(() => setLoading(false));
     }
   }, [scanId]);
 
@@ -518,8 +526,31 @@ export default function Dashboard() {
   ];
   const severityTotal = Math.max(metrics.total_threats, 1);
 
+  // Map attack types to severity color based on the dominant severity for that type
+  const ATTACK_SEVERITY_MAP: Record<string, string> = {
+    'Reverse Shell': 'CRITICAL',
+    'Data Exfiltration': 'CRITICAL',
+    'DDoS / HTTP Flood': 'CRITICAL',
+    'SMB Exploit': 'CRITICAL',
+    'SQL Injection': 'CRITICAL',
+    'SSH Brute Force': 'MEDIUM',
+    'RDP Brute Force': 'MEDIUM',
+    'Port Scanning': 'MEDIUM',
+    'Web App Scanning': 'MEDIUM',
+    'FTP Default Creds': 'MEDIUM',
+    'DNS Tunneling': 'LOW',
+    'NTP Amplification': 'LOW',
+    'Suspicious TLS': 'LOW',
+    'Cleartext Auth': 'LOW',
+    'ICMP Tunnel': 'LOW',
+  };
+
   const barData = Object.entries(attack_types)
-    .map(([name, value]) => ({ name, value: value as number }))
+    .map(([name, value]) => ({
+      name,
+      value: value as number,
+      color: SEVERITY_COLORS[ATTACK_SEVERITY_MAP[name] || 'LOW'] || '#3b82f6',
+    }))
     .sort((a, b) => b.value - a.value);
 
   const sortedThreats = [...threats].sort((a, b) => {
@@ -906,7 +937,7 @@ export default function Dashboard() {
                 <YAxis type="category" dataKey="name" width={120} tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="transparent" />
                 <Tooltip contentStyle={{ background: 'rgba(10,15,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#f1f5f9', fontFamily: 'JetBrains Mono', fontSize: 12 }} />
                 <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
-                  {barData.map((_, i) => <Cell key={i} fill={i < 2 ? '#ef4444' : i < 4 ? '#f59e0b' : '#3b82f6'} />)}
+                  {barData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
