@@ -820,42 +820,43 @@ export default function Dashboard() {
             />
           </motion.div>
 
-          {/* Severity Distribution — Stitch glassmorphism rotating border */}
+          {/* Severity Distribution — Stitch deep space glassmorphism + rotating beam border */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="relative"
-            style={{ padding: 2, borderRadius: 20 }}
+            className="relative h-full"
+            style={{ padding: 2, borderRadius: 20, minHeight: 360 }}
           >
-            {/* Injected CSS for @property --angle animation */}
+            {/* Injected CSS — simple transform: rotate() keyframe (works everywhere) */}
             <style>{`
-              @property --sev-angle {
-                syntax: '<angle>';
-                initial-value: 0deg;
-                inherits: false;
-              }
-              @keyframes sevBorderSpin {
-                from { --sev-angle: 0deg; }
-                to { --sev-angle: 360deg; }
-              }
-              .sev-rotating-border {
-                background: conic-gradient(
-                  from var(--sev-angle),
-                  transparent 0deg,
-                  transparent 340deg,
-                  rgba(255,255,255,0.9) 350deg,
-                  rgba(147,197,253,0.7) 355deg,
-                  rgba(255,255,255,0.9) 360deg
-                );
-                animation: sevBorderSpin 3s linear infinite;
+              @keyframes sevBeamSpin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
               }
             `}</style>
-            {/* Rotating border layer */}
+            {/* Spinning conic-gradient layer behind the card */}
             <div
-              className="sev-rotating-border absolute inset-0"
-              style={{ borderRadius: 20 }}
+              className="absolute pointer-events-none"
+              style={{
+                top: -40, left: -40, right: -40, bottom: -40,
+                borderRadius: 20,
+                background: 'conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,1) 85%, rgba(255,255,255,0.8) 90%, transparent 100%)',
+                animation: 'sevBeamSpin 3s linear infinite',
+              }}
             />
+            {/* Clip mask — hides the oversized gradient outside the border area */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ borderRadius: 20 }}>
+              <div
+                className="absolute"
+                style={{
+                  top: -40, left: -40, right: -40, bottom: -40,
+                  borderRadius: 20,
+                  background: 'conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,1) 85%, rgba(255,255,255,0.8) 90%, transparent 100%)',
+                  animation: 'sevBeamSpin 3s linear infinite',
+                }}
+              />
+            </div>
             {/* Soft glow underneath */}
             <div
               className="absolute inset-0 pointer-events-none"
@@ -866,9 +867,10 @@ export default function Dashboard() {
             />
             {/* Inner card — deep space dark mode frosted glass */}
             <div
+              className="h-full flex flex-col"
               style={{
                 borderRadius: 18,
-                background: 'rgba(8,12,28,0.92)',
+                background: 'rgba(8,12,28,0.95)',
                 backdropFilter: 'blur(24px) saturate(180%)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 padding: 28,
@@ -877,7 +879,7 @@ export default function Dashboard() {
               }}
             >
               <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-6 text-slate-500">SEVERITY DISTRIBUTION</h3>
-              <div className="space-y-5">
+              <div className="space-y-5 flex-1 flex flex-col justify-center">
                 {severityData.map((d) => (
                   <div key={d.name}>
                     <div className="flex items-center gap-3 mb-2">
