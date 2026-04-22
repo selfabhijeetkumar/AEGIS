@@ -78,7 +78,7 @@ export default function Upload() {
   const [threatCount, setThreatCount] = useState(0);
   const [error, setError] = useState('');
 
-  const processFile = useCallback(async (action: () => Promise<{ scan_id: string; message: string }>) => {
+  const processFile = useCallback(async (action: () => Promise<{ scan_id: string; message: string; totalThreats?: number }>) => {
     setUploading(true);
     setError('');
     setPhase(0);
@@ -107,7 +107,7 @@ export default function Upload() {
       setProgress(100);
 
       // Flash red effect
-      setTimeout(() => setThreatCount(150), 500);
+      setTimeout(() => setThreatCount(result.totalThreats || 15), 500);
 
       // Navigate to dashboard with cinematic delay
       setTimeout(() => {
@@ -128,11 +128,15 @@ export default function Upload() {
     // Try real backend first
     processFile(async () => {
       try {
-        return await uploadFile(acceptedFiles[0]);
+        const result = await uploadFile(acceptedFiles[0]);
+        // For actual uploads, if backend doesn't return total_threats, it will default to 15 in processFile
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalThreats = (result as any).total_threats || (result as any).metrics?.total_threats;
+        return { ...result, totalThreats };
       } catch {
         // Backend not available — fall back to mock data
         sessionStorage.setItem(`aegis-scan-${DEMO_SCAN_ID}`, JSON.stringify(MOCK_SCAN_RESULT));
-        return { scan_id: DEMO_SCAN_ID, message: 'Fallback to demo data' };
+        return { scan_id: DEMO_SCAN_ID, message: 'Fallback to demo data', totalThreats: MOCK_SCAN_RESULT.metrics.total_threats };
       }
     });
   }, [processFile]);
