@@ -10,7 +10,7 @@
 <img src="https://img.shields.io/badge/CLASSIFICATION-CRITICAL-red?style=for-the-badge&labelColor=000000&color=ef4444" />
 <img src="https://img.shields.io/badge/STATUS-OPERATIONAL-green?style=for-the-badge&labelColor=000000&color=10b981" />
 <img src="https://img.shields.io/badge/CLEARANCE-TOP_SECRET-blue?style=for-the-badge&labelColor=000000&color=3b82f6" />
-<img src="https://img.shields.io/badge/CODE_CLASH-2026-purple?style=for-the-badge&labelColor=000000&color=8b5cf6" />
+<img src="https://img.shields.io/badge/AAVISHKAR-2026-purple?style=for-the-badge&labelColor=000000&color=8b5cf6" />
 
 <br/>
 
