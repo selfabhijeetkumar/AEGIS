@@ -333,7 +333,4 @@ async def get_history():
     return {"scans": summaries}
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
-
+if __name__ == "__main__": import uvicorn, os; uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), log_level="info")
