@@ -269,7 +269,7 @@ export default function RadarThreatScanner({ threats, threatScore, overallSeveri
       cancelAnimationFrame(animRef.current);
       ro.disconnect();
     };
-  }, [dots, threatScore, scoreColor, severityLabel]);
+  }, [dots, threats.length, threatScore, scoreColor, severityLabel]);
 
   return (
     <div className="flex flex-col items-center w-full h-full">

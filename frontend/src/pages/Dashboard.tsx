@@ -592,12 +592,18 @@ export default function Dashboard() {
   }
 
   const { metrics, commander_brief, threats, attack_types, timeline } = data;
-  const severityData = [
-    { name: 'CRITICAL', value: metrics.critical_count, color: '#ef4444', glow: '0 0 12px rgba(239,68,68,0.4)' },
-    { name: 'MEDIUM', value: metrics.medium_count, color: '#f59e0b', glow: '0 0 12px rgba(245,158,11,0.4)' },
-    { name: 'LOW', value: metrics.low_count, color: '#10b981', glow: '0 0 12px rgba(16,185,129,0.4)' },
-  ];
+
+  // Fix 2 — Dynamic severity percentages that always sum to 100
   const severityTotal = Math.max(metrics.total_threats, 1);
+  const criticalPct = Math.round((metrics.critical_count / severityTotal) * 100);
+  const mediumPct = Math.round((metrics.medium_count / severityTotal) * 100);
+  const lowPct = 100 - criticalPct - mediumPct;
+
+  const severityData = [
+    { name: 'CRITICAL', value: metrics.critical_count, pct: criticalPct, color: '#ef4444', glow: '0 0 12px rgba(239,68,68,0.4)' },
+    { name: 'MEDIUM', value: metrics.medium_count, pct: mediumPct, color: '#f59e0b', glow: '0 0 12px rgba(245,158,11,0.4)' },
+    { name: 'LOW', value: metrics.low_count, pct: lowPct, color: '#10b981', glow: '0 0 12px rgba(16,185,129,0.4)' },
+  ];
 
   // Map attack types to severity color based on the dominant severity for that type
   const ATTACK_SEVERITY_MAP: Record<string, string> = {
@@ -814,17 +820,65 @@ export default function Dashboard() {
             />
           </motion.div>
 
+          {/* Severity Distribution — Stitch glassmorphism rotating border */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="aegis-card"
+            className="relative"
+            style={{ padding: 2, borderRadius: 20 }}
           >
-            <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-6 text-slate-500">SEVERITY DISTRIBUTION</h3>
-            <div className="space-y-5">
-              {severityData.map((d) => {
-                const pct = Math.round((d.value / severityTotal) * 100);
-                return (
+            {/* Injected CSS for @property --angle animation */}
+            <style>{`
+              @property --sev-angle {
+                syntax: '<angle>';
+                initial-value: 0deg;
+                inherits: false;
+              }
+              @keyframes sevBorderSpin {
+                from { --sev-angle: 0deg; }
+                to { --sev-angle: 360deg; }
+              }
+              .sev-rotating-border {
+                background: conic-gradient(
+                  from var(--sev-angle),
+                  transparent 0deg,
+                  transparent 340deg,
+                  rgba(255,255,255,0.9) 350deg,
+                  rgba(147,197,253,0.7) 355deg,
+                  rgba(255,255,255,0.9) 360deg
+                );
+                animation: sevBorderSpin 3s linear infinite;
+              }
+            `}</style>
+            {/* Rotating border layer */}
+            <div
+              className="sev-rotating-border absolute inset-0"
+              style={{ borderRadius: 20 }}
+            />
+            {/* Soft glow underneath */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                borderRadius: 20,
+                boxShadow: '0 0 40px rgba(59,130,246,0.12), 0 0 80px rgba(6,182,212,0.06), 0 8px 32px rgba(0,0,0,0.4)',
+              }}
+            />
+            {/* Inner card — deep space dark mode frosted glass */}
+            <div
+              style={{
+                borderRadius: 18,
+                background: 'rgba(8,12,28,0.92)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                padding: 28,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-6 text-slate-500">SEVERITY DISTRIBUTION</h3>
+              <div className="space-y-5">
+                {severityData.map((d) => (
                   <div key={d.name}>
                     <div className="flex items-center gap-3 mb-2">
                       {/* Severity icon circle */}
@@ -840,21 +894,21 @@ export default function Dashboard() {
                         <div
                           className="h-full rounded-full"
                           style={{
-                            width: barsMounted ? `${pct}%` : '0%',
+                            width: barsMounted ? `${d.pct}%` : '0%',
                             background: d.color,
                             boxShadow: d.glow,
                             transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)',
-                            minWidth: pct > 0 ? 8 : 0,
+                            minWidth: d.pct > 0 ? 8 : 0,
                           }}
                         />
                       </div>
                       {/* Percentage */}
-                      <span className="font-mono text-sm font-bold w-12 text-right" style={{ color: d.color }}>{pct}%</span>
+                      <span className="font-mono text-sm font-bold w-12 text-right" style={{ color: d.color }}>{d.pct}%</span>
                     </div>
                     <div className="font-mono text-xs text-slate-500 ml-12 pl-1">{d.value} threats detected</div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </motion.div>
         </div>
