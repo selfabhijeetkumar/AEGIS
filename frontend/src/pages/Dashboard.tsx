@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
 import ExpandedMapModal from '../components/ExpandedMapModal';
+import RadarThreatScanner from '../components/RadarThreatScanner';
 import { getScanResults, type ScanResult, type ThreatEvent } from '../services/api';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -798,19 +799,19 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ROW 1: Gauge + Donut */}
+        {/* ROW 1: Radar + Donut */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="md:col-span-2 aegis-card flex flex-col items-center justify-center relative" style={{ minHeight: 320 }}
+            className="md:col-span-2 aegis-card flex flex-col items-center justify-center relative" style={{ minHeight: 360, background: '#0a0f1e' }}
           >
-
-            <div className="text-center relative z-10">
-              <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 text-slate-500">OVERALL THREAT SCORE</h3>
-              <ThreatGauge score={metrics.overall_threat_score} />
-            </div>
+            <RadarThreatScanner
+              threats={threats}
+              threatScore={metrics.overall_threat_score}
+              overallSeverity={metrics.overall_severity}
+            />
           </motion.div>
 
           <motion.div
