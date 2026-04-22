@@ -71,31 +71,31 @@ export interface ScanSummary {
 export const uploadFile = async (file: File): Promise<{ scan_id: string; message: string }> => {
   const formData = new FormData();
   formData.append('file', file);
-  const { data } = await api.post('/upload', formData, {
+  const { data } = await api.post('/api/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;
 };
 
 export const runDemo = async (): Promise<{ scan_id: string; message: string }> => {
-  const { data } = await api.post('/demo');
+  const { data } = await api.post('/api/demo');
   return data;
 };
 
 export const getScanResults = async (scanId: string): Promise<ScanResult> => {
-  const { data } = await api.get(`/scan/${scanId}`);
+  const { data } = await api.get(`/api/scan/${scanId}`);
   return data;
 };
 
 export const downloadReport = async (scanId: string): Promise<Blob> => {
-  const { data } = await api.get(`/scan/${scanId}/report`, {
+  const { data } = await api.get(`/api/scan/${scanId}/report`, {
     responseType: 'blob',
   });
   return data;
 };
 
 export const getHistory = async (): Promise<{ scans: ScanSummary[] }> => {
-  const { data } = await api.get('/history');
+  const { data } = await api.get('/api/history');
   return data;
 };
 
