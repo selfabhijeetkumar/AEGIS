@@ -634,7 +634,7 @@ Year 1 Conservative Estimate:
 
 ---
 
-## `10` · TEAM VANGUARD
+## `10` · TEAM LOGIC LEGION
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -651,7 +651,7 @@ Year 1 Conservative Estimate:
 | **Institution** | Dayananda Sagar University | Dayananda Sagar University |
 | **Specialization** | AI/ML · React · FastAPI | Development |
 | **GitHub** | [@selfabhijeetkumar](https://github.com/selfabhijeetkumar) | — |
-| **LinkedIn** | [Abhijeet Kumar](https://linkedin.com/in/abhijeet-kumar12) | — |
+
 
 </div>
 
@@ -659,7 +659,7 @@ Year 1 Conservative Estimate:
 
 ## CHALLENGE ALIGNMENT
 
-**Challeng - real world problems**
+**Challenge - real world problems**
 
 > *"Create a solution that detects interference in RF signals, classifies its severity, and notifies users with actionable insights."*
 
