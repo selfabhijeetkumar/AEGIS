@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Download, History, Menu, Shield, Check, ShieldAlert, Eye
+  Download, History, Menu, Shield, Check, ShieldAlert, Clock, Trash2
 } from 'lucide-react';
 import { getScanResults, type ScanResult } from '../services/api';
 import jsPDF from 'jspdf';
@@ -16,7 +16,9 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 interface ScanHistoryEntry {
+  historyId: string;
   scanId: string;
+  routeScanId: string;
   fileName: string;
   date: string;
   threatScore: number;
@@ -170,6 +172,11 @@ export default function Report() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
+  // Delete confirmation state — tracks which historyId is pending confirm
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Clear all confirmation state
+  const [clearConfirm, setClearConfirm] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -216,9 +223,39 @@ export default function Report() {
     load();
   }, [scanId]);
 
+  // Navigate to dashboard in SAME TAB
   const handleViewReport = (entry: ScanHistoryEntry) => {
-    // Navigate to dashboard for this scan — the dashboard will load data from its sources
-    navigate(`/dashboard/${entry.scanId}`);
+    const route = entry.routeScanId || entry.scanId;
+    navigate(`/dashboard/${route}`);
+  };
+
+  // Delete a single history entry
+  const handleDeleteEntry = (historyId: string) => {
+    if (deleteConfirmId === historyId) {
+      // Second click — actually delete
+      try {
+        const raw = localStorage.getItem('aegis_scan_history');
+        const history: ScanHistoryEntry[] = raw ? JSON.parse(raw) : [];
+        const updated = history.filter(h => (h.historyId || h.scanId) !== historyId);
+        localStorage.setItem('aegis_scan_history', JSON.stringify(updated));
+        setScanHistory(updated);
+      } catch {
+        // Silent
+      }
+      setDeleteConfirmId(null);
+    } else {
+      // First click — show confirm
+      setDeleteConfirmId(historyId);
+      // Auto-dismiss confirm after 3 seconds
+      setTimeout(() => setDeleteConfirmId(prev => prev === historyId ? null : prev), 3000);
+    }
+  };
+
+  // Clear all history
+  const handleClearAll = () => {
+    localStorage.removeItem('aegis_scan_history');
+    setScanHistory([]);
+    setClearConfirm(false);
   };
 
   const handleDownload = () => {
@@ -434,101 +471,150 @@ export default function Report() {
               </ul>
             </div>
 
-            {/* ===== SCAN HISTORY — THE ARCHIVE (localStorage-powered) ===== */}
+            {/* ===== SCAN HISTORY — THE ARCHIVE ===== */}
             <div className="aegis-card" style={{ padding: 32 }}>
-              <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 flex items-center gap-2 text-slate-500">
-                <History size={16} /> SCAN HISTORY — THE ARCHIVE
-              </h3>
+              {/* Header row with title + CLEAR ARCHIVE button */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-mono text-xs tracking-[0.15em] uppercase flex items-center gap-2 text-slate-500">
+                  <History size={16} /> SCAN HISTORY — THE ARCHIVE
+                </h3>
+                {scanHistory.length > 0 && !clearConfirm && (
+                  <button
+                    onClick={() => setClearConfirm(true)}
+                    className="font-mono text-xs text-slate-600 hover:text-red-400 transition-colors rounded px-2 py-1"
+                    style={{ border: '1px solid rgba(100,116,139,0.3)', fontFamily: "'JetBrains Mono', monospace" }}
+                  >
+                    CLEAR ARCHIVE
+                  </button>
+                )}
+                {clearConfirm && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-red-400 tracking-wider">CONFIRM CLEAR?</span>
+                    <button
+                      onClick={handleClearAll}
+                      className="font-mono text-[10px] text-red-400 hover:text-red-300 font-bold px-2 py-0.5 rounded transition-colors"
+                      style={{ border: '1px solid rgba(239,68,68,0.3)' }}
+                    >
+                      YES
+                    </button>
+                    <button
+                      onClick={() => setClearConfirm(false)}
+                      className="font-mono text-[10px] text-slate-500 hover:text-slate-300 font-bold px-2 py-0.5 rounded transition-colors"
+                      style={{ border: '1px solid rgba(100,116,139,0.3)' }}
+                    >
+                      NO
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {scanHistory.length === 0 ? (
-                <div className="text-center py-6">
-                  <ShieldAlert size={24} className="text-slate-600 mx-auto mb-2" />
-                  <p className="font-mono text-xs text-slate-600">No archived scans</p>
-                  <p className="font-mono text-[10px] text-slate-700 mt-1">Complete a scan to populate the archive</p>
+                /* Fix 5 — Empty state */
+                <div className="text-center py-8">
+                  <Clock size={28} className="text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-600" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
+                    NO ARCHIVED SCANS
+                  </p>
+                  <p className="text-slate-700 mt-1" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10 }}>
+                    Run a scan to begin building your intelligence archive.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {scanHistory.map((entry) => {
+                    const entryKey = entry.historyId || entry.scanId;
                     const severityColor = SEVERITY_COLORS[entry.overallSeverity] || '#3b82f6';
                     const scoreColor = entry.threatScore >= 66 ? '#ef4444' : entry.threatScore >= 31 ? '#f59e0b' : '#10b981';
+                    const isConfirming = deleteConfirmId === entryKey;
 
                     return (
                       <div
-                        key={entry.scanId}
-                        className="relative rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
+                        key={entryKey}
+                        onClick={() => handleViewReport(entry)}
+                        className="relative rounded-xl overflow-hidden transition-all duration-300 cursor-pointer"
                         style={{
-                          background: 'rgba(10,15,30,0.8)',
-                          border: '1px solid rgba(255,255,255,0.08)',
+                          background: 'rgba(255,255,255,0.03)',
+                          border: '1px solid rgba(255,255,255,0.06)',
                           borderLeft: `3px solid ${severityColor}`,
-                          backdropFilter: 'blur(12px)',
-                          boxShadow: `0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                          padding: 16,
                         }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
                       >
-                        {/* Top row: Scan ID + Date + Classification badge */}
-                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+                        {/* Top row: Scan ID + Date + Severity badge + Delete button */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                             <span
-                              className="font-mono text-xs font-bold"
-                              style={{ color: '#22d3ee' }}
+                              style={{ color: '#22d3ee', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700 }}
                             >
-                              {entry.scanId.length > 16 ? entry.scanId.slice(0, 16) + '…' : entry.scanId}
+                              {entryKey.length > 20 ? entryKey.slice(0, 20) + '…' : entryKey}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-500">
-                              {new Date(entry.date).toLocaleString()}
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#64748b' }}>
+                              {entry.date}
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: '0.05em',
+                                padding: '1px 8px',
+                                borderRadius: 999,
+                                color: severityColor,
+                                background: `${severityColor}15`,
+                                border: `1px solid ${severityColor}40`,
+                              }}
+                            >
+                              {entry.overallSeverity}
                             </span>
                           </div>
-                          <span
-                            className="font-mono text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full"
-                            style={{
-                              color: severityColor,
-                              background: `${severityColor}15`,
-                              border: `1px solid ${severityColor}40`,
+                          {/* Delete button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEntry(entryKey);
                             }}
+                            className="flex items-center gap-1 ml-2 flex-shrink-0 transition-colors"
+                            style={{ color: isConfirming ? '#ef4444' : '#475569' }}
+                            onMouseEnter={(e) => { if (!isConfirming) e.currentTarget.style.color = '#ef4444'; }}
+                            onMouseLeave={(e) => { if (!isConfirming) e.currentTarget.style.color = '#475569'; }}
+                            aria-label="Delete scan entry"
                           >
-                            {entry.overallSeverity}
-                          </span>
+                            {isConfirming ? (
+                              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700, color: '#ef4444' }}>
+                                Confirm?
+                              </span>
+                            ) : (
+                              <Trash2 size={14} />
+                            )}
+                          </button>
                         </div>
 
-                        {/* Middle row: Threat score + total threats + scan time */}
-                        <div className="flex items-center gap-4 px-4 py-2">
+                        {/* Middle row: Threat score + total threats + C/M/L + scan time */}
+                        <div className="flex items-center gap-4 mb-2">
                           <div className="flex items-baseline gap-1">
                             <span
-                              className="font-display text-2xl font-bold"
-                              style={{ color: scoreColor, textShadow: `0 0 10px ${scoreColor}30` }}
+                              className="font-display font-bold"
+                              style={{ fontSize: 24, color: scoreColor, textShadow: `0 0 10px ${scoreColor}30` }}
                             >
                               {entry.threatScore}
                             </span>
-                            <span className="font-mono text-[10px] text-slate-600">/100</span>
+                            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#475569' }}>/100</span>
                           </div>
-                          <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                          <div className="flex items-center gap-3" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#64748b' }}>
                             <span>{entry.totalThreats} threats</span>
                             <span>·</span>
-                            <span
-                              className="font-bold"
-                              style={{ color: '#ef4444' }}
-                            >
-                              {entry.criticalCount}C
-                            </span>
-                            <span
-                              className="font-bold"
-                              style={{ color: '#f59e0b' }}
-                            >
-                              {entry.mediumCount}M
-                            </span>
-                            <span
-                              className="font-bold"
-                              style={{ color: '#10b981' }}
-                            >
-                              {entry.lowCount}L
-                            </span>
+                            <span style={{ color: '#ef4444', fontWeight: 700 }}>{entry.criticalCount}C</span>
+                            <span style={{ color: '#f59e0b', fontWeight: 700 }}>{entry.mediumCount}M</span>
+                            <span style={{ color: '#10b981', fontWeight: 700 }}>{entry.lowCount}L</span>
                             <span>·</span>
                             <span>{entry.scanTime}s</span>
                           </div>
                         </div>
 
-                        {/* Bottom row: Filename + VIEW REPORT button */}
-                        <div className="flex items-center justify-between px-4 pb-3 pt-1">
-                          <span className="font-mono text-[10px] text-slate-600 truncate max-w-[60%]">
+                        {/* Bottom row: Filename + VIEW REPORT → */}
+                        <div className="flex items-center justify-between">
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#475569' }} className="truncate max-w-[55%]">
                             {entry.fileName}
                           </span>
                           <button
@@ -536,22 +622,18 @@ export default function Report() {
                               e.stopPropagation();
                               handleViewReport(entry);
                             }}
-                            className="flex items-center gap-1.5 font-mono text-[10px] tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all duration-200"
+                            className="flex items-center gap-1 transition-colors"
                             style={{
-                              background: 'rgba(59,130,246,0.12)',
-                              border: '1px solid rgba(59,130,246,0.25)',
+                              fontFamily: "'JetBrains Mono', monospace",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              letterSpacing: '0.05em',
                               color: '#60a5fa',
                             }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(59,130,246,0.25)';
-                              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.5)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
-                              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)';
-                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#93c5fd'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#60a5fa'; }}
                           >
-                            <Eye size={12} /> VIEW REPORT
+                            VIEW REPORT →
                           </button>
                         </div>
                       </div>

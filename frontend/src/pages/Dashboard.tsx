@@ -418,7 +418,9 @@ function AttackTimeline({ timeline, onSelectThreat }: { timeline: ThreatEvent[];
 
 /* ===== SCAN HISTORY PERSISTENCE ===== */
 interface ScanHistoryEntry {
+  historyId: string;
   scanId: string;
+  routeScanId: string;
   fileName: string;
   date: string;
   threatScore: number;
@@ -436,18 +438,19 @@ function saveScanToHistory(scanData: ScanResult) {
     const raw = localStorage.getItem('aegis_scan_history');
     const history: ScanHistoryEntry[] = raw ? JSON.parse(raw) : [];
 
-    // Deduplicate by scanId
-    const filtered = history.filter(h => h.scanId !== scanData.scan_id);
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cb = scanData.commander_brief as any;
     const briefLines = Array.isArray(cb) ? cb : (cb?.lines || []);
     const briefExcerpt = briefLines.length > 0 ? String(briefLines[0]).slice(0, 200) : 'No brief available';
 
+    const historyId = `scan-${Date.now()}`;
+
     const entry: ScanHistoryEntry = {
-      scanId: scanData.scan_id,
+      historyId,
+      scanId: historyId,
+      routeScanId: scanData.scan_id,
       fileName: scanData.filename || 'Unknown file',
-      date: scanData.timestamp || new Date().toISOString(),
+      date: new Date().toLocaleString(),
       threatScore: scanData.metrics.overall_threat_score,
       totalThreats: scanData.metrics.total_threats,
       criticalCount: scanData.metrics.critical_count,
@@ -458,11 +461,11 @@ function saveScanToHistory(scanData: ScanResult) {
       overallSeverity: scanData.metrics.overall_severity,
     };
 
-    // Add new entry at the beginning
-    filtered.unshift(entry);
+    // No deduplication — every scan run creates a new entry
+    history.unshift(entry);
 
-    // Keep max 10 entries
-    const trimmed = filtered.slice(0, 10);
+    // Keep max 10 entries — oldest removed when exceeded
+    const trimmed = history.slice(0, 10);
 
     localStorage.setItem('aegis_scan_history', JSON.stringify(trimmed));
   } catch {
