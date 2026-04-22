@@ -125,30 +125,31 @@ export default function Upload() {
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return;
 
-    // Try real backend first
+    // REAL FILE UPLOAD — completely separate from demo path
+    // Never falls back to demo data — shows error instead
     processFile(async () => {
+      console.log('[AEGIS] Starting real file upload:', acceptedFiles[0].name);
+      const result = await uploadFile(acceptedFiles[0]);
+      console.log('[AEGIS] Upload response:', result);
+
+      const realScanId = result.scan_id;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalThreats = (result as any).total_threats || 0;
+      console.log('[AEGIS] Real scan ID:', realScanId, '| Threats:', totalThreats);
+
+      // Fetch full scan data from backend and store in sessionStorage
+      // so Dashboard can load it without another API call
       try {
-        const result = await uploadFile(acceptedFiles[0]);
-        const scanId = result.scan_id;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalThreats = (result as any).total_threats;
-
-        // Fetch full scan data from backend and store in sessionStorage
-        // so Dashboard can load it without another API call
-        try {
-          const { getScanResults } = await import('../services/api');
-          const fullData = await getScanResults(scanId);
-          sessionStorage.setItem(`aegis-scan-${scanId}`, JSON.stringify(fullData));
-        } catch {
-          // If fetch fails, Dashboard will retry via API
-        }
-
-        return { scan_id: scanId, message: result.message, totalThreats };
-      } catch {
-        // Backend not available — fall back to mock data
-        sessionStorage.setItem(`aegis-scan-${DEMO_SCAN_ID}`, JSON.stringify(MOCK_SCAN_RESULT));
-        return { scan_id: DEMO_SCAN_ID, message: 'Fallback to demo data', totalThreats: MOCK_SCAN_RESULT.metrics.total_threats };
+        const { getScanResults } = await import('../services/api');
+        const fullData = await getScanResults(realScanId);
+        console.log('[AEGIS] Full scan data fetched, storing in sessionStorage');
+        sessionStorage.setItem(`aegis-scan-${realScanId}`, JSON.stringify(fullData));
+      } catch (fetchErr) {
+        console.warn('[AEGIS] Could not fetch full scan data, Dashboard will retry via API:', fetchErr);
       }
+
+      console.log('[AEGIS] Navigating to:', `/dashboard/${realScanId}`);
+      return { scan_id: realScanId, message: result.message, totalThreats };
     });
   }, [processFile]);
 
