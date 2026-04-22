@@ -52,6 +52,9 @@ async def upload_file(file: UploadFile = File(...)):
     
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
+        
+    if file.size and file.size > 50_000_000:
+        raise HTTPException(status_code=400, detail="File too large — maximum 50MB supported. For large datasets use the CICIDS demo.")
 
     # Validate file type
     ext = os.path.splitext(file.filename)[1].lower()
@@ -66,12 +69,15 @@ async def upload_file(file: UploadFile = File(...)):
 
     # Step 1: Read the actual uploaded file using pandas
     try:
-        df = pd.read_csv(file.file, low_memory=False)
+        df = pd.read_csv(file.file, nrows=1000, low_memory=True, dtype=str)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"INTELLIGENCE FAILURE — Could not parse file: {str(e)}")
 
-    # Step 2: Use ALL rows up to max 5000
-    df = df.head(5000)
+    # Step 2: Use ALL rows up to max 1000
+    df = df.head(1000)
+    
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors='ignore')
 
     # Step 3: Run Isolation Forest on actual data
     numeric_df = df.select_dtypes(include=[np.number]).fillna(0)
@@ -81,6 +87,9 @@ async def upload_file(file: UploadFile = File(...)):
     model = IsolationForest(contamination=0.05, random_state=42)
     predictions = model.fit_predict(numeric_df)
     scores = model.decision_function(numeric_df)
+    
+    import gc
+    gc.collect()
     
     anomalies_idx = np.where(predictions == -1)[0]
     
