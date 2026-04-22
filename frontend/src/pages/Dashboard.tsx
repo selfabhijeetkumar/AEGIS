@@ -636,33 +636,27 @@ export default function Dashboard() {
     { name: 'LOW', value: metrics.low_count, pct: lowPct, color: '#10b981', glow: '0 0 12px rgba(16,185,129,0.4)' },
   ];
 
-  // Map attack types to severity color based on the dominant severity for that type
-  const ATTACK_SEVERITY_MAP: Record<string, string> = {
-    'Reverse Shell': 'CRITICAL',
-    'Data Exfiltration': 'CRITICAL',
-    'DDoS / HTTP Flood': 'CRITICAL',
-    'SMB Exploit': 'CRITICAL',
-    'SQL Injection': 'CRITICAL',
-    'SSH Brute Force': 'MEDIUM',
-    'RDP Brute Force': 'MEDIUM',
-    'Port Scanning': 'MEDIUM',
-    'Web App Scanning': 'MEDIUM',
-    'FTP Default Creds': 'MEDIUM',
-    'DNS Tunneling': 'LOW',
-    'NTP Amplification': 'LOW',
-    'Suspicious TLS': 'LOW',
-    'Cleartext Auth': 'LOW',
-    'ICMP Tunnel': 'LOW',
-  };
+  // Dynamically determine dominant severity for each attack type from actual threats
+  const attackTypeSeverityMap: Record<string, string> = {};
+  for (const t of threats) {
+    const type = t.threat_type;
+    const cur = attackTypeSeverityMap[type];
+    // CRITICAL > MEDIUM > LOW priority
+    if (!cur || t.severity === 'CRITICAL' || (t.severity === 'MEDIUM' && cur !== 'CRITICAL')) {
+      attackTypeSeverityMap[type] = t.severity;
+    }
+  }
 
   const barData = Object.entries(dynamicAttackTypes)
     .filter(([, value]) => value > 0)
     .map(([name, value]) => ({
       name,
       value: value as number,
-      color: SEVERITY_COLORS[ATTACK_SEVERITY_MAP[name] || 'LOW'] || '#3b82f6',
+      color: SEVERITY_COLORS[attackTypeSeverityMap[name] || 'LOW'] || '#10b981',
     }))
     .sort((a, b) => b.value - a.value);
+
+  const allCountsAreOne = Object.values(dynamicAttackTypes).length > 0 && Object.values(dynamicAttackTypes).every(v => v === 1);
 
   const sortedThreats = [...threats].sort((a, b) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -978,12 +972,12 @@ export default function Dashboard() {
             <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 flex items-center gap-2 text-slate-500">
               <Activity size={16} /> ATTACK TYPE DISTRIBUTION
             </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData} layout="vertical" margin={{ left: 20 }}>
-                <XAxis type="number" stroke="#334155" tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
-                <YAxis type="category" dataKey="name" width={120} tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="transparent" />
-                <Tooltip contentStyle={{ background: 'rgba(10,15,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#f1f5f9', fontFamily: 'JetBrains Mono', fontSize: 12 }} />
-                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20}>
+            <ResponsiveContainer width="100%" height={Math.max(200, barData.length * 40)}>
+              <BarChart data={barData} layout="vertical" margin={{ left: 20, right: 20 }}>
+                <XAxis type="number" stroke="#334155" allowDecimals={false} tick={{ fill: '#64748b', fontSize: 10, fontFamily: 'JetBrains Mono' }} />
+                <YAxis type="category" dataKey="name" width={180} tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'JetBrains Mono' }} stroke="transparent" />
+                <Tooltip contentStyle={{ background: 'rgba(10,15,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#f1f5f9', fontFamily: 'JetBrains Mono', fontSize: 12 }} formatter={(value: number) => [`${value} incidents`, 'Count']} />
+                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={22}>
                   {barData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Bar>
               </BarChart>
@@ -1042,24 +1036,55 @@ export default function Dashboard() {
         </motion.div>
 
         {/* ATTACK TYPE CARDS — Dynamic from actual threats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-8">
-          {Object.entries(dynamicAttackTypes)
-            .filter(([, count]) => count > 0)
-            .sort(([, a], [, b]) => (b as number) - (a as number))
-            .map(([type, count], i) => (
-            <motion.div
-              key={type}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 + i * 0.05, ease: EASE }}
-              className="aegis-card text-center"
-            >
-              <div className="font-display text-2xl mb-1" style={{ color: SEVERITY_COLORS[ATTACK_SEVERITY_MAP[type] || 'LOW'] || '#3b82f6' }}><AnimatedNumber value={count as number} /></div>
-              <div className="font-mono text-[9px] text-slate-600 mb-1">incidents detected</div>
-              <div className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-500">{type}</div>
-            </motion.div>
-          ))}
-        </div>
+        {allCountsAreOne ? (
+          /* When every type has count=1, show clean list instead of a grid of 1s */
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }} className="aegis-card mb-8">
+            <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 flex items-center gap-2 text-slate-500">
+              <Activity size={16} /> DETECTED ATTACK TYPES
+            </h3>
+            <div className="space-y-2">
+              {Object.entries(dynamicAttackTypes)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([type], i) => {
+                  const sevColor = SEVERITY_COLORS[attackTypeSeverityMap[type] || 'LOW'] || '#10b981';
+                  return (
+                    <motion.div
+                      key={type}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.9 + i * 0.04, ease: EASE }}
+                      className="flex items-center gap-3 py-2 px-3 rounded-lg"
+                      style={{ background: 'rgba(255,255,255,0.03)' }}
+                    >
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: sevColor, boxShadow: `0 0 6px ${sevColor}` }} />
+                      <span className="font-mono text-sm text-slate-300 flex-1">{type}</span>
+                      <span className="font-mono text-[10px] tracking-wider uppercase" style={{ color: sevColor }}>{attackTypeSeverityMap[type] || 'LOW'}</span>
+                      <span className="font-mono text-xs text-slate-500">1 incident</span>
+                    </motion.div>
+                  );
+                })}
+            </div>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-8">
+            {Object.entries(dynamicAttackTypes)
+              .filter(([, count]) => count > 0)
+              .sort(([, a], [, b]) => (b as number) - (a as number))
+              .map(([type, count], i) => (
+              <motion.div
+                key={type}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 + i * 0.05, ease: EASE }}
+                className="aegis-card text-center"
+              >
+                <div className="font-display text-2xl mb-1" style={{ color: SEVERITY_COLORS[attackTypeSeverityMap[type] || 'LOW'] || '#10b981' }}><AnimatedNumber value={count as number} /></div>
+                <div className="font-mono text-[9px] text-slate-600 mb-1">incidents detected</div>
+                <div className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-500">{type}</div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* FLOATING REPORT BUTTON — RED GLOW PULSE */}
