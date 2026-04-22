@@ -308,273 +308,284 @@ export default function ExpandedMapModal({ attackerMarkers, onClose }: ExpandedM
   const lowCount = attackerMarkers.filter(m => m.severity === 'LOW').length;
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 9999,
-        background: 'rgba(0,0,0,0.95)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* ===== CLOSE BUTTON — top-right, always visible, OUTSIDE canvas ===== */}
+    <>
+      {/* ===== GLOWING RED CLOSE BUTTON — fixed, outside modal DOM, nothing can cover it ===== */}
+      <style>{`
+        @keyframes aegisCloseButtonPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      `}</style>
       <div
         style={{
-          position: 'absolute',
-          top: 24,
+          position: 'fixed',
+          top: 80,
           right: 24,
-          zIndex: 10000,
+          zIndex: 99999,
         }}
       >
         <button
           onClick={onClose}
           aria-label="Close expanded map"
           style={{
-            background: 'rgba(0,0,0,0.9)',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: 8,
-            padding: '8px 16px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            borderRadius: 50,
+            padding: '12px 24px',
+            fontSize: 16,
+            fontWeight: 800,
+            letterSpacing: 2,
+            border: '2px solid white',
             cursor: 'pointer',
-            color: '#ffffff',
-            fontSize: 18,
-            fontWeight: 700,
+            boxShadow: '0 0 20px rgba(239,68,68,0.8)',
             fontFamily: "'JetBrains Mono', monospace",
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            transition: 'all 0.2s ease',
+            animation: 'aegisCloseButtonPulse 2s ease-in-out infinite',
+            transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(239,68,68,0.8)';
+            e.currentTarget.style.backgroundColor = '#dc2626';
+            e.currentTarget.style.boxShadow = '0 0 30px rgba(239,68,68,1)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0,0,0,0.9)';
+            e.currentTarget.style.backgroundColor = '#ef4444';
+            e.currentTarget.style.boxShadow = '0 0 20px rgba(239,68,68,0.8)';
           }}
         >
-          ✕ CLOSE
+          ✕ CLOSE MAP
         </button>
       </div>
 
-      {/* Header bar */}
+      {/* ===== MODAL OVERLAY ===== */}
       <div
         style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 9999,
+          background: 'rgba(0,0,0,0.95)',
           display: 'flex',
-          alignItems: 'center',
-          padding: '12px 24px',
-          background: '#000000',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
+          flexDirection: 'column',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <ShieldAlert size={18} style={{ color: '#06b6d4' }} />
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 12,
-              letterSpacing: '0.15em',
-              textTransform: 'uppercase',
-              color: '#06b6d4',
-            }}
-          >
-            IP GEOLOCATION — ATTACKER ORIGINS
-          </span>
-          <span
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              padding: '2px 8px',
-              borderRadius: 999,
-              background: 'rgba(239,68,68,0.15)',
-              color: '#ef4444',
-              border: '1px solid rgba(239,68,68,0.3)',
-            }}
-          >
-            {attackerMarkers.length} ORIGINS
-          </span>
-        </div>
-      </div>
-
-      {/* Canvas map area */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: '100%',
-            height: '100%',
-            display: 'block',
-            cursor: isDraggingRef.current ? 'grabbing' : 'grab',
-          }}
-          onMouseMove={handleMouseMove}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-        />
-
-        {/* Zoom controls — bottom-right */}
+        {/* Header bar */}
         <div
           style={{
-            position: 'absolute',
-            bottom: 20,
-            right: 20,
-            zIndex: 10000,
             display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
+            alignItems: 'center',
+            padding: '12px 24px',
+            background: '#000000',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
           }}
         >
-          <button
-            onClick={handleZoomIn}
-            aria-label="Zoom in"
-            style={{
-              width: 36,
-              height: 36,
-              background: 'rgba(0,0,0,0.8)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 6,
-              color: '#e2e8f0',
-              fontSize: 18,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
-          >
-            +
-          </button>
-          <button
-            onClick={handleZoomOut}
-            aria-label="Zoom out"
-            style={{
-              width: 36,
-              height: 36,
-              background: 'rgba(0,0,0,0.8)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 6,
-              color: '#e2e8f0',
-              fontSize: 18,
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
-          >
-            −
-          </button>
-          <button
-            onClick={handleResetView}
-            aria-label="Reset view"
-            style={{
-              width: 36,
-              height: 36,
-              background: 'rgba(0,0,0,0.8)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 6,
-              color: '#94a3b8',
-              fontSize: 10,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.15s ease',
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
-          >
-            {zoomLevel.toFixed(1)}x
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ShieldAlert size={18} style={{ color: '#06b6d4' }} />
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 12,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: '#06b6d4',
+              }}
+            >
+              IP GEOLOCATION — ATTACKER ORIGINS
+            </span>
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 999,
+                background: 'rgba(239,68,68,0.15)',
+                color: '#ef4444',
+                border: '1px solid rgba(239,68,68,0.3)',
+              }}
+            >
+              {attackerMarkers.length} ORIGINS
+            </span>
+          </div>
         </div>
 
-        {/* Tooltip */}
-        {tooltip && (
+        {/* Canvas map area */}
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              cursor: isDraggingRef.current ? 'grabbing' : 'grab',
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+          />
+
+          {/* Zoom controls — bottom-right */}
           <div
             style={{
-              position: 'fixed',
-              left: tooltip.x + 16,
-              top: tooltip.y - 10,
-              zIndex: 10002,
-              background: 'rgba(10,15,30,0.95)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 10,
-              padding: '12px 16px',
-              pointerEvents: 'none',
-              backdropFilter: 'blur(16px)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-              minWidth: 200,
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              zIndex: 10000,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
             }}
           >
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#22d3ee', marginBottom: 4, fontWeight: 600 }}>
-              {tooltip.marker.source_ip}
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#f8fafc', marginBottom: 4 }}>
-              {tooltip.marker.country}
-            </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
-              {tooltip.marker.threat_type}
-            </div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <span style={{
-                fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700,
-                padding: '2px 8px', borderRadius: 999,
-                background: `${SEVERITY_COLORS[tooltip.marker.severity]}25`,
-                color: SEVERITY_COLORS[tooltip.marker.severity],
-                border: `1px solid ${SEVERITY_COLORS[tooltip.marker.severity]}50`,
-              }}>
-                {tooltip.marker.severity}
-              </span>
-              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#3b82f6' }}>
-                {tooltip.marker.mitre_code}
-              </span>
-            </div>
+            <button
+              onClick={handleZoomIn}
+              aria-label="Zoom in"
+              style={{
+                width: 36,
+                height: 36,
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                color: '#e2e8f0',
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
+            >
+              +
+            </button>
+            <button
+              onClick={handleZoomOut}
+              aria-label="Zoom out"
+              style={{
+                width: 36,
+                height: 36,
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                color: '#e2e8f0',
+                fontSize: 18,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
+            >
+              −
+            </button>
+            <button
+              onClick={handleResetView}
+              aria-label="Reset view"
+              style={{
+                width: 36,
+                height: 36,
+                background: 'rgba(0,0,0,0.8)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                color: '#94a3b8',
+                fontSize: 10,
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59,130,246,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.8)'; }}
+            >
+              {zoomLevel.toFixed(1)}x
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* Bottom legend bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 32,
-          padding: '10px 24px',
-          background: '#000000',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          flexShrink: 0,
-        }}
-      >
-        {[
-          { label: 'CRITICAL', color: '#ef4444', count: criticalCount },
-          { label: 'MEDIUM', color: '#f59e0b', count: mediumCount },
-          { label: 'LOW', color: '#10b981', count: lowCount },
-        ].map((item) => (
-          <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#94a3b8', letterSpacing: '0.08em' }}>
-              {item.label}
-            </span>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: item.color, fontWeight: 700 }}>
-              {item.count}
-            </span>
-          </div>
-        ))}
+          {/* Tooltip */}
+          {tooltip && (
+            <div
+              style={{
+                position: 'fixed',
+                left: tooltip.x + 16,
+                top: tooltip.y - 10,
+                zIndex: 10002,
+                background: 'rgba(10,15,30,0.95)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 10,
+                padding: '12px 16px',
+                pointerEvents: 'none',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                minWidth: 200,
+              }}
+            >
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: '#22d3ee', marginBottom: 4, fontWeight: 600 }}>
+                {tooltip.marker.source_ip}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: '#f8fafc', marginBottom: 4 }}>
+                {tooltip.marker.country}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>
+                {tooltip.marker.threat_type}
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 700,
+                  padding: '2px 8px', borderRadius: 999,
+                  background: `${SEVERITY_COLORS[tooltip.marker.severity]}25`,
+                  color: SEVERITY_COLORS[tooltip.marker.severity],
+                  border: `1px solid ${SEVERITY_COLORS[tooltip.marker.severity]}50`,
+                }}>
+                  {tooltip.marker.severity}
+                </span>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: '#3b82f6' }}>
+                  {tooltip.marker.mitre_code}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom legend bar */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 32,
+            padding: '10px 24px',
+            background: '#000000',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            flexShrink: 0,
+          }}
+        >
+          {[
+            { label: 'CRITICAL', color: '#ef4444', count: criticalCount },
+            { label: 'MEDIUM', color: '#f59e0b', count: mediumCount },
+            { label: 'LOW', color: '#10b981', count: lowCount },
+          ].map((item) => (
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, boxShadow: `0 0 8px ${item.color}` }} />
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: '#94a3b8', letterSpacing: '0.08em' }}>
+                {item.label}
+              </span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: item.color, fontWeight: 700 }}>
+                {item.count}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
