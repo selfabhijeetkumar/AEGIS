@@ -53,8 +53,8 @@ async def upload_file(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
         
-    if file.size and file.size > 50_000_000:
-        raise HTTPException(status_code=400, detail="File too large — maximum 50MB supported. For large datasets use the CICIDS demo.")
+    if file.size and file.size > 200_000_000:
+        raise HTTPException(status_code=400, detail="File too large — maximum 200MB supported. For large datasets use the CICIDS demo.")
 
     # Validate file type
     ext = os.path.splitext(file.filename)[1].lower()
@@ -69,12 +69,12 @@ async def upload_file(file: UploadFile = File(...)):
 
     # Step 1: Read the actual uploaded file using pandas
     try:
-        df = pd.read_csv(file.file, nrows=1000, low_memory=True, dtype=str)
+        df = pd.read_csv(file.file, nrows=2000, low_memory=True, dtype=str, skiprows=lambda x: x > 0 and x % 3 != 0)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"INTELLIGENCE FAILURE — Could not parse file: {str(e)}")
 
-    # Step 2: Use ALL rows up to max 1000
-    df = df.head(1000)
+    # Step 2: Use ALL rows up to max 2000
+    df = df.head(2000)
     
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='ignore')
