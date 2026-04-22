@@ -44,10 +44,10 @@ DETECT  ·  DECODE  ·  DEFEND
 
 | PARAMETER | CLASSIFICATION |
 |:---:|:---:|
-| **Event** | CODE CLASH 2026 — DSU 48-Hour Hackathon |
-| **Challenge** | 02 — Interference Detection & Alert System |
-| **Team** | VANGUARD |
-| **Members** | Abhijeet Kumar · Vaishnavi Isrannavar |
+| **Event** | AAVISHKAR 2026 — DSATM 8-Hour Hackathon |
+| **Challenge** | REAL WORLD PROBLEMS (ANY DOMAIN) |
+| **Team** | LOGIC LEGION |
+| **Members** | Abhijeet Kumar · Vaishnavi Isrannavar . AYUSH MODI |
 | **Institution** | Dayananda Sagar University, Bengaluru |
 | **Status** | 🟢 FULLY OPERATIONAL |
 
@@ -638,14 +638,14 @@ Year 1 Conservative Estimate:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        TEAM VANGUARD                            │
+│                        TEAM LOGIC LEGION                            │
 │              "Leading the charge. Guarding the perimeter."      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 <div align="center">
 
-| | Abhijeet Kumar | Vaishnavi Isrannavar |
+| | Abhijeet Kumar | Vaishnavi Isrannavar | AYUSH MODI |
 |:---:|:---:|:---:|
 | **Role** | Team Lead · Full Stack + ML | Co-Developer |
 | **Institution** | Dayananda Sagar University | Dayananda Sagar University |
@@ -659,7 +659,7 @@ Year 1 Conservative Estimate:
 
 ## CHALLENGE ALIGNMENT
 
-**Challenge 02 — Interference Detection and Alert System**
+**Challeng - real world problems**
 
 > *"Create a solution that detects interference in RF signals, classifies its severity, and notifies users with actionable insights."*
 
@@ -710,7 +710,7 @@ AEGIS directly addresses Challenge 02:
 ║                                                               ║
 ║         DETECT  ·  DECODE  ·  DEFEND                         ║
 ║                                                               ║
-║    AEGIS v2.1 · VANGUARD · CODE CLASH 2026 · DSU             ║
+║    AEGIS v2.1 · logic legion · AAVISHKAR 2026 · DSU             ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 ```
@@ -722,7 +722,7 @@ AEGIS directly addresses Challenge 02:
 <img src="https://img.shields.io/badge/Deploy-Vercel-000000?style=flat-square&logo=vercel" />
 <img src="https://img.shields.io/badge/Backend-Render-46E3B7?style=flat-square" />
 
-*Built in 48 hours by Team VANGUARD for CODE CLASH 2026*
+*Built in 8 hours by Team logic legion for AAVISHKAR 2026*
 *Dayananda Sagar University, Bengaluru, India*
 
 </div>
