@@ -615,7 +615,14 @@ export default function Dashboard() {
     );
   }
 
-  const { metrics, commander_brief, threats, attack_types, timeline } = data;
+  const { metrics, commander_brief, threats, attack_types: _rawAttackTypes, timeline } = data;
+
+  // Fix 2 — Dynamically compute attack type counts from actual threats data
+  const dynamicAttackTypes: Record<string, number> = threats.reduce((acc: Record<string, number>, t) => {
+    const type = t.threat_type;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
 
   // Fix 2 — Dynamic severity percentages that always sum to 100
   const severityTotal = Math.max(metrics.total_threats, 1);
@@ -648,7 +655,8 @@ export default function Dashboard() {
     'ICMP Tunnel': 'LOW',
   };
 
-  const barData = Object.entries(attack_types)
+  const barData = Object.entries(dynamicAttackTypes)
+    .filter(([, value]) => value > 0)
     .map(([name, value]) => ({
       name,
       value: value as number,
@@ -1033,9 +1041,12 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* ATTACK TYPE CARDS */}
+        {/* ATTACK TYPE CARDS — Dynamic from actual threats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 mb-8">
-          {Object.entries(attack_types).map(([type, count], i) => (
+          {Object.entries(dynamicAttackTypes)
+            .filter(([, count]) => count > 0)
+            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .map(([type, count], i) => (
             <motion.div
               key={type}
               initial={{ opacity: 0, y: 20 }}
@@ -1043,7 +1054,8 @@ export default function Dashboard() {
               transition={{ delay: 0.9 + i * 0.05, ease: EASE }}
               className="aegis-card text-center"
             >
-              <div className="font-display text-2xl mb-1"><AnimatedNumber value={count as number} /></div>
+              <div className="font-display text-2xl mb-1" style={{ color: SEVERITY_COLORS[ATTACK_SEVERITY_MAP[type] || 'LOW'] || '#3b82f6' }}><AnimatedNumber value={count as number} /></div>
+              <div className="font-mono text-[9px] text-slate-600 mb-1">incidents detected</div>
               <div className="font-mono text-[10px] tracking-[0.15em] uppercase text-slate-500">{type}</div>
             </motion.div>
           ))}

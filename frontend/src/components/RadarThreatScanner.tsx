@@ -238,27 +238,44 @@ export default function RadarThreatScanner({ threats, threatScore, overallSeveri
       }
 
       // --- Center display ---
-      // Score number
-      ctx.font = "800 48px 'Inter', sans-serif";
+      // "THREAT SCORE" label above number
+      ctx.font = "600 9px 'JetBrains Mono', monospace";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('THREAT SCORE', cx, cy - 38);
+
+      // Large score number
+      ctx.font = "800 44px 'Inter', sans-serif";
       ctx.save();
       ctx.shadowColor = `${scoreColor}40`;
       ctx.shadowBlur = 20;
       ctx.fillStyle = scoreColor;
-      ctx.fillText(String(threatScore), cx, cy - 12);
+      ctx.fillText(String(threatScore), cx, cy - 10);
       ctx.restore();
 
-      // Severity label
-      ctx.font = "600 11px 'JetBrains Mono', monospace";
-      ctx.letterSpacing = '0.15em';
-      ctx.fillStyle = scoreColor;
-      ctx.fillText(severityLabel, cx, cy + 20);
+      // "/100" suffix
+      ctx.font = "400 12px 'JetBrains Mono', monospace";
+      ctx.fillStyle = '#475569';
+      ctx.fillText('/100', cx, cy + 10);
 
-      // "THREATS DETECTED" subtext
-      ctx.font = "400 9px 'JetBrains Mono', monospace";
-      ctx.fillStyle = '#64748b';
-      ctx.fillText('THREATS DETECTED', cx, cy + 36);
+      // Severity label
+      ctx.font = "700 10px 'JetBrains Mono', monospace";
+      ctx.fillStyle = scoreColor;
+      ctx.fillText(severityLabel, cx, cy + 26);
+
+      // Divider line
+      ctx.beginPath();
+      ctx.moveTo(cx - 24, cy + 35);
+      ctx.lineTo(cx + 24, cy + 35);
+      ctx.strokeStyle = 'rgba(100,116,139,0.3)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+
+      // "N THREATS FOUND"
+      ctx.font = "500 8px 'JetBrains Mono', monospace";
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText(`${threats.length} THREATS FOUND`, cx, cy + 46);
 
       animRef.current = requestAnimationFrame(draw);
     };
