@@ -129,10 +129,21 @@ export default function Upload() {
     processFile(async () => {
       try {
         const result = await uploadFile(acceptedFiles[0]);
-        // For actual uploads, if backend doesn't return total_threats, it will default to 15 in processFile
+        const scanId = result.scan_id;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const totalThreats = (result as any).total_threats || (result as any).metrics?.total_threats;
-        return { ...result, totalThreats };
+        const totalThreats = (result as any).total_threats;
+
+        // Fetch full scan data from backend and store in sessionStorage
+        // so Dashboard can load it without another API call
+        try {
+          const { getScanResults } = await import('../services/api');
+          const fullData = await getScanResults(scanId);
+          sessionStorage.setItem(`aegis-scan-${scanId}`, JSON.stringify(fullData));
+        } catch {
+          // If fetch fails, Dashboard will retry via API
+        }
+
+        return { scan_id: scanId, message: result.message, totalThreats };
       } catch {
         // Backend not available — fall back to mock data
         sessionStorage.setItem(`aegis-scan-${DEMO_SCAN_ID}`, JSON.stringify(MOCK_SCAN_RESULT));

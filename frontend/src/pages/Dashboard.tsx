@@ -535,13 +535,23 @@ export default function Dashboard() {
         });
       }
     } else {
-      // Real API call for actual uploads
-      getScanResults(scanId).then(d => {
-        setData(d);
-        localStorage.setItem('aegis_scan_data', JSON.stringify(d));
-        saveScanToHistory(d);
+      // Real scan — check sessionStorage first (populated by Upload.tsx after real upload)
+      const stored = sessionStorage.getItem(`aegis-scan-${scanId}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setData(parsed);
+        localStorage.setItem('aegis_scan_data', JSON.stringify(parsed));
+        saveScanToHistory(parsed);
         setLoading(false);
-      }).catch(() => setLoading(false));
+      } else {
+        // Fallback: fetch from backend API
+        getScanResults(scanId).then(d => {
+          setData(d);
+          localStorage.setItem('aegis_scan_data', JSON.stringify(d));
+          saveScanToHistory(d);
+          setLoading(false);
+        }).catch(() => setLoading(false));
+      }
     }
   }, [scanId]);
 
