@@ -242,49 +242,56 @@ def generate_pdf_report(scan_data: dict) -> bytes:
     threats = scan_data.get("threats", [])
 
     if threats:
-        table_data = [["#", "Timestamp", "Source IP", "Type", "Severity", "MITRE"]]
-        for t in threats[:50]:  # Cap at 50 for PDF
-            table_data.append([
-                str(t["id"]),
-                str(t["timestamp"])[:19],
-                t["source_ip"],
-                t["threat_type"],
-                t["severity"],
-                t["mitre_code"]
-            ])
+        for sev in ["CRITICAL", "MEDIUM", "LOW"]:
+            sev_threats = [t for t in threats if t["severity"] == sev]
+            if not sev_threats:
+                continue
 
-        threat_table = Table(table_data, colWidths=[25, 100, 90, 90, 60, 55])
-        style_commands = [
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("FONTSIZE", (0, 1), (-1, -1), 8),
-            ("FONTNAME", (0, 1), (-1, -1), "Courier"),
-            ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0a0f1e")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), white),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("GRID", (0, 0), (-1, -1), 0.25, HexColor("#e2e8f0")),
-            ("ALIGN", (0, 0), (0, -1), "CENTER"),
-            ("ALIGN", (4, 0), (4, -1), "CENTER"),
-            ("ALIGN", (5, 0), (5, -1), "CENTER"),
-        ]
+            elements.append(Paragraph(f"{sev} ALERTS ({len(sev_threats)})", subheading_style))
+            table_data = [["#", "Timestamp", "Source IP", "Type", "Severity", "MITRE"]]
+            for t in sev_threats:
+                table_data.append([
+                    str(t["id"]),
+                    str(t["timestamp"])[:19],
+                    t["source_ip"],
+                    t["threat_type"],
+                    t["severity"],
+                    t["mitre_code"]
+                ])
 
-        # Color severity cells
-        for i, t in enumerate(threats[:50], 1):
-            if t["severity"] == "CRITICAL":
-                style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#ef4444")))
-                style_commands.append(("FONTNAME", (4, i), (4, i), "Courier-Bold"))
-            elif t["severity"] == "MEDIUM":
-                style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#f59e0b")))
-            else:
-                style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#10b981")))
+            threat_table = Table(table_data, colWidths=[25, 100, 90, 90, 60, 55], repeatRows=1)
+            style_commands = [
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("FONTSIZE", (0, 1), (-1, -1), 8),
+                ("FONTNAME", (0, 1), (-1, -1), "Courier"),
+                ("BACKGROUND", (0, 0), (-1, 0), HexColor("#0a0f1e")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), white),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("GRID", (0, 0), (-1, -1), 0.25, HexColor("#e2e8f0")),
+                ("ALIGN", (0, 0), (0, -1), "CENTER"),
+                ("ALIGN", (4, 0), (4, -1), "CENTER"),
+                ("ALIGN", (5, 0), (5, -1), "CENTER"),
+            ]
 
-            # Alternate row colors
-            if i % 2 == 0:
-                style_commands.append(("BACKGROUND", (0, i), (-1, i), HexColor("#f8fafc")))
+            # Color severity cells
+            for i, t in enumerate(sev_threats, 1):
+                if t["severity"] == "CRITICAL":
+                    style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#ef4444")))
+                    style_commands.append(("FONTNAME", (4, i), (4, i), "Courier-Bold"))
+                elif t["severity"] == "MEDIUM":
+                    style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#f59e0b")))
+                else:
+                    style_commands.append(("TEXTCOLOR", (4, i), (4, i), HexColor("#10b981")))
 
-        threat_table.setStyle(TableStyle(style_commands))
-        elements.append(threat_table)
+                if i % 2 == 0:
+                    style_commands.append(("BACKGROUND", (0, i), (-1, i), HexColor("#f8fafc")))
+
+            threat_table.setStyle(TableStyle(style_commands))
+            elements.append(threat_table)
+            elements.append(Spacer(1, 15))
+            
     elements.append(PageBreak())
 
     # ===== PAGE 4: ATTACK TIMELINE =====
