@@ -14,9 +14,32 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 function StaticShieldFallback() {
   return (
     <div className="flex items-center justify-center w-full h-full">
-      <svg viewBox="0 0 100 120" className="w-48 h-48 drop-shadow-[0_0_15px_rgba(6,182,212,0.6)]">
-        <path d="M50 5 L90 25 L90 60 C90 90 50 115 50 115 C50 115 10 90 10 60 L10 25 Z" fill="none" stroke="#3b82f6" strokeWidth="2" />
-        <path d="M50 15 L80 30 L80 60 C80 85 50 105 50 105 C50 105 20 85 20 60 L20 30 Z" fill="rgba(6,182,212,0.1)" stroke="#06b6d4" strokeWidth="1" strokeDasharray="4 2" />
+      <svg viewBox="0 0 100 120" className="w-48 h-48 drop-shadow-[0_0_20px_rgba(6,182,212,0.6)]">
+        <defs>
+          <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#0a2a5e" />
+            <stop offset="100%" stopColor="#1e3a8a" />
+          </linearGradient>
+          <filter id="diamondGlow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Main Base Shield with Deep Blue Gradient and Border */}
+        <path d="M50 5 L90 25 L90 60 C90 90 50 115 50 115 C50 115 10 90 10 60 L10 25 Z" fill="url(#shieldGrad)" stroke="#3b82f6" strokeWidth="2" />
+        
+        {/* Inner Dashed Border */}
+        <path d="M50 15 L80 30 L80 60 C80 85 50 105 50 105 C50 105 20 85 20 60 L20 30 Z" fill="none" stroke="rgba(59,130,246,0.4)" strokeWidth="1" strokeDasharray="4 4" />
+        
+        {/* Center Glowing Diamond */}
+        <polygon points="50,45 60,60 50,75 40,60" fill="#3b82f6" filter="url(#diamondGlow)" />
+        
+        {/* Scan line effect simulation */}
+        <line x1="20" y1="60" x2="80" y2="60" stroke="#06b6d4" strokeWidth="1" opacity="0.6" />
       </svg>
     </div>
   );
