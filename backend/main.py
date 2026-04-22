@@ -43,6 +43,11 @@ def root():
     return {"name": "AEGIS", "version": "2.1.0", "status": "OPERATIONAL", "classification": "CLASSIFIED"}
 
 
+@app.get("/api/health")
+async def health_check():
+    return {"status": "operational", "timestamp": datetime.now().isoformat()}
+
+
 @app.post("/api/upload")
 async def upload_file(file: UploadFile = File(...)):
     """Upload a log file for analysis."""

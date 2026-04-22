@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
 import Landing from './pages/Landing';
 import Upload from './pages/Upload';
 import Dashboard from './pages/Dashboard';
@@ -24,6 +25,10 @@ function AnimatedRoutes() {
 }
 
 function App() {
+  useEffect(() => {
+    fetch('https://aegis-backend-748p.onrender.com/api/health').catch(console.error);
+  }, []);
+
   return (
     <Router>
       <CursorTrail />
