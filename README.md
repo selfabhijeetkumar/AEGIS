@@ -47,7 +47,7 @@ DETECT  ·  DECODE  ·  DEFEND
 | **Event** | AAVISHKAR 2026 — DSATM 8-Hour Hackathon |
 | **Challenge** | REAL WORLD PROBLEMS (ANY DOMAIN) |
 | **Team** | LOGIC LEGION |
-| **Members** | Abhijeet Kumar · Vaishnavi Isrannavar . AYUSH MODI |
+| **Members** | Vaishnavi Isrannavar · Abhijeet Kumar . AYUSH MODI |
 | **Institution** | Dayananda Sagar University, Bengaluru |
 | **Status** | 🟢 FULLY OPERATIONAL |
 
