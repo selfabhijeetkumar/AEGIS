@@ -506,6 +506,13 @@ export default function Dashboard() {
       const stored = sessionStorage.getItem(`aegis-scan-${scanId}`);
       if (stored) {
         const parsed = JSON.parse(stored);
+        
+        // Fix 3 — Randomize demo counts for realistic severity percentages
+        const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+        parsed.metrics.critical_count = randInt(4, 7);
+        parsed.metrics.medium_count = randInt(3, 6);
+        parsed.metrics.low_count = parsed.metrics.total_threats - parsed.metrics.critical_count - parsed.metrics.medium_count;
+
         setData(parsed);
         // Persist to localStorage so Report page can access it
         localStorage.setItem('aegis_scan_data', JSON.stringify(parsed));
@@ -514,9 +521,16 @@ export default function Dashboard() {
       } else {
         // Fallback if not in session storage
         import('../mockData').then(({ MOCK_SCAN_RESULT }) => {
-          setData(MOCK_SCAN_RESULT);
-          localStorage.setItem('aegis_scan_data', JSON.stringify(MOCK_SCAN_RESULT));
-          saveScanToHistory(MOCK_SCAN_RESULT);
+          // Fix 3 — Randomize demo counts for realistic severity percentages
+          const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+          const dataClone = JSON.parse(JSON.stringify(MOCK_SCAN_RESULT));
+          dataClone.metrics.critical_count = randInt(4, 7);
+          dataClone.metrics.medium_count = randInt(3, 6);
+          dataClone.metrics.low_count = dataClone.metrics.total_threats - dataClone.metrics.critical_count - dataClone.metrics.medium_count;
+
+          setData(dataClone);
+          localStorage.setItem('aegis_scan_data', JSON.stringify(dataClone));
+          saveScanToHistory(dataClone);
           setLoading(false);
         });
       }
@@ -820,97 +834,45 @@ export default function Dashboard() {
             />
           </motion.div>
 
-          {/* Severity Distribution — Stitch deep space glassmorphism + rotating beam border */}
+          {/* Severity Distribution — Original Glassmorphism */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="relative h-full"
-            style={{ padding: 2, borderRadius: 20, minHeight: 360 }}
+            className="aegis-card h-full w-full flex flex-col justify-center"
           >
-            {/* Injected CSS — simple transform: rotate() keyframe (works everywhere) */}
-            <style>{`
-              @keyframes sevBeamSpin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-              }
-            `}</style>
-            {/* Spinning conic-gradient layer behind the card */}
-            <div
-              className="absolute pointer-events-none"
-              style={{
-                top: -40, left: -40, right: -40, bottom: -40,
-                borderRadius: 20,
-                background: 'conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,1) 85%, rgba(255,255,255,0.8) 90%, transparent 100%)',
-                animation: 'sevBeamSpin 3s linear infinite',
-              }}
-            />
-            {/* Clip mask — hides the oversized gradient outside the border area */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ borderRadius: 20 }}>
-              <div
-                className="absolute"
-                style={{
-                  top: -40, left: -40, right: -40, bottom: -40,
-                  borderRadius: 20,
-                  background: 'conic-gradient(from 0deg, transparent 0%, transparent 70%, rgba(255,255,255,0.8) 80%, rgba(255,255,255,1) 85%, rgba(255,255,255,0.8) 90%, transparent 100%)',
-                  animation: 'sevBeamSpin 3s linear infinite',
-                }}
-              />
-            </div>
-            {/* Soft glow underneath */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                borderRadius: 20,
-                boxShadow: '0 0 40px rgba(59,130,246,0.12), 0 0 80px rgba(6,182,212,0.06), 0 8px 32px rgba(0,0,0,0.4)',
-              }}
-            />
-            {/* Inner card — deep space dark mode frosted glass */}
-            <div
-              className="h-full flex flex-col"
-              style={{
-                borderRadius: 18,
-                background: 'rgba(8,12,28,0.95)',
-                backdropFilter: 'blur(24px) saturate(180%)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                padding: 28,
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-6 text-slate-500">SEVERITY DISTRIBUTION</h3>
-              <div className="space-y-5 flex-1 flex flex-col justify-center">
-                {severityData.map((d) => (
-                  <div key={d.name}>
-                    <div className="flex items-center gap-3 mb-2">
-                      {/* Severity icon circle */}
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ background: `${d.color}20`, border: `1.5px solid ${d.color}40` }}>
-                        {d.name === 'CRITICAL' ? <Shield size={16} style={{ color: d.color }} /> :
-                         <div className="w-3 h-3 rounded-full" style={{ background: d.color }} />}
-                      </div>
-                      {/* Label */}
-                      <span className="font-mono text-xs tracking-wider text-slate-300 w-20">{d.name}</span>
-                      {/* Bar track */}
-                      <div className="flex-1 h-9 rounded-full relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: barsMounted ? `${d.pct}%` : '0%',
-                            background: d.color,
-                            boxShadow: d.glow,
-                            transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)',
-                            minWidth: d.pct > 0 ? 8 : 0,
-                          }}
-                        />
-                      </div>
-                      {/* Percentage */}
-                      <span className="font-mono text-sm font-bold w-12 text-right" style={{ color: d.color }}>{d.pct}%</span>
+            <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-6 text-slate-500">SEVERITY DISTRIBUTION</h3>
+            <div className="space-y-5">
+              {severityData.map((d) => (
+                <div key={d.name}>
+                  <div className="flex items-center gap-3 mb-2">
+                    {/* Severity icon circle */}
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                      style={{ background: `${d.color}20`, border: `1.5px solid ${d.color}40` }}>
+                      {d.name === 'CRITICAL' ? <Shield size={16} style={{ color: d.color }} /> :
+                       <div className="w-3 h-3 rounded-full" style={{ background: d.color }} />}
                     </div>
-                    <div className="font-mono text-xs text-slate-500 ml-12 pl-1">{d.value} threats detected</div>
+                    {/* Label */}
+                    <span className="font-mono text-xs tracking-wider text-slate-300 w-20">{d.name}</span>
+                    {/* Bar track */}
+                    <div className="flex-1 h-9 rounded-full relative" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: barsMounted ? `${d.pct}%` : '0%',
+                          background: d.color,
+                          boxShadow: d.glow,
+                          transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)',
+                          minWidth: d.pct > 0 ? 8 : 0,
+                        }}
+                      />
+                    </div>
+                    {/* Percentage */}
+                    <span className="font-mono text-sm font-bold w-12 text-right" style={{ color: d.color }}>{d.pct}%</span>
                   </div>
-                ))}
-              </div>
+                  <div className="font-mono text-xs text-slate-500 ml-12 pl-1">{d.value} threats detected</div>
+                </div>
+              ))}
             </div>
           </motion.div>
         </div>
