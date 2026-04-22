@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import {
   Lock, BarChart3, Brain, Target, AlertTriangle, Upload as UploadIcon,
-  Zap, Cpu, Shield
+  Zap, Cpu, Shield, Info
 } from 'lucide-react';
-import { uploadFile, runDemo } from '../services/api';
+import { DEMO_SCAN_ID, MOCK_SCAN_RESULT } from '../mockData';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -121,13 +121,49 @@ export default function Upload() {
     }
   }, [navigate]);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
-    processFile(() => uploadFile(acceptedFiles[0]));
-  }, [processFile]);
+  const onDrop = useCallback(async (_acceptedFiles: File[]) => {
+    if (_acceptedFiles.length === 0) return;
+    // Backend not deployed — show friendly message
+    setError('BACKEND DEPLOYMENT IN PROGRESS — Use the CICIDS 2017 demo dataset below for a full demonstration.');
+  }, []);
 
   const handleDemo = () => {
-    processFile(() => runDemo());
+    // Store mock data in sessionStorage so Dashboard can read it without an API call
+    sessionStorage.setItem(`aegis-scan-${DEMO_SCAN_ID}`, JSON.stringify(MOCK_SCAN_RESULT));
+
+    // Run the cinematic loading animation, then navigate
+    setUploading(true);
+    setError('');
+    setPhase(0);
+    setProgress(0);
+
+    const phaseTimer = setInterval(() => {
+      setPhase(prev => {
+        if (prev < LOADING_PHASES.length - 2) return prev + 1;
+        return prev;
+      });
+    }, 1800);
+
+    const progressTimer = setInterval(() => {
+      setProgress(prev => {
+        if (prev < 90) return prev + Math.random() * 5;
+        return prev;
+      });
+    }, 150);
+
+    // Simulate analysis completion
+    setTimeout(() => {
+      clearInterval(phaseTimer);
+      clearInterval(progressTimer);
+      setPhase(LOADING_PHASES.length - 1);
+      setProgress(100);
+      setThreatCount(MOCK_SCAN_RESULT.metrics.total_threats);
+
+      // Navigate to dashboard
+      setTimeout(() => {
+        navigate(`/dashboard/${DEMO_SCAN_ID}`);
+      }, 2500);
+    }, 7000);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -260,22 +296,24 @@ export default function Upload() {
               <span className="font-mono text-[10px] text-slate-600">Accepts .csv .log .txt</span>
             </div>
 
-            {/* Error */}
+            {/* Error / Info message */}
             {error && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="mt-4 p-4 aegis-card text-center"
-                style={{ borderColor: 'rgba(239,68,68,0.3)' }}
+                style={{ borderColor: error.includes('DEPLOYMENT') ? 'rgba(59,130,246,0.3)' : 'rgba(239,68,68,0.3)' }}
               >
-                <p className="font-mono text-sm text-red-400 flex items-center justify-center gap-2">
-                  <AlertTriangle size={16} /> {error}
+                <p className={`font-mono text-sm flex items-center justify-center gap-2 ${
+                  error.includes('DEPLOYMENT') ? 'text-blue-400' : 'text-red-400'
+                }`}>
+                  {error.includes('DEPLOYMENT') ? <Info size={16} /> : <AlertTriangle size={16} />} {error}
                 </p>
                 <button
                   onClick={() => setError('')}
                   className="mt-2 font-mono text-xs underline text-slate-500 hover:text-white transition-colors"
                 >
-                  Retry transmission
+                  Dismiss
                 </button>
               </motion.div>
             )}
