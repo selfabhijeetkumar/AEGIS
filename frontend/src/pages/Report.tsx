@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Download, History, Menu, Shield, Check, ShieldAlert
+  Download, History, Menu, Shield, Check, ShieldAlert, Eye
 } from 'lucide-react';
-import { getScanResults, getHistory, type ScanResult, type ScanSummary } from '../services/api';
+import { getScanResults, type ScanResult } from '../services/api';
 import jsPDF from 'jspdf';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -14,6 +14,20 @@ const SEVERITY_COLORS: Record<string, string> = {
   MEDIUM: '#f59e0b',
   LOW: '#10b981',
 };
+
+interface ScanHistoryEntry {
+  scanId: string;
+  fileName: string;
+  date: string;
+  threatScore: number;
+  totalThreats: number;
+  criticalCount: number;
+  mediumCount: number;
+  lowCount: number;
+  scanTime: number;
+  briefExcerpt: string;
+  overallSeverity: string;
+}
 
 /* ===== REPORT PREVIEW (CHANGE-20) ===== */
 function ReportPreview({ data }: { data: ScanResult }) {
@@ -152,7 +166,7 @@ export default function Report() {
   const { scanId } = useParams<{ scanId: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<ScanResult | null>(null);
-  const [history, setHistory] = useState<ScanSummary[]>([]);
+  const [scanHistory, setScanHistory] = useState<ScanHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -183,19 +197,29 @@ export default function Report() {
             }
           }
         }
-        try {
-          const hist = await getHistory();
-          setHistory(hist.scans);
-        } catch {
-          // History API unavailable — not critical
-        }
       } catch (e) {
         console.error(e);
       }
+
+      // Load scan history from localStorage
+      try {
+        const raw = localStorage.getItem('aegis_scan_history');
+        if (raw) {
+          setScanHistory(JSON.parse(raw));
+        }
+      } catch {
+        // Silent — history unavailable
+      }
+
       setLoading(false);
     };
     load();
   }, [scanId]);
+
+  const handleViewReport = (entry: ScanHistoryEntry) => {
+    // Navigate to dashboard for this scan — the dashboard will load data from its sources
+    navigate(`/dashboard/${entry.scanId}`);
+  };
 
   const handleDownload = () => {
     if (!scanId || !data) return;
@@ -410,36 +434,129 @@ export default function Report() {
               </ul>
             </div>
 
-            {/* Scan History (CHANGE-20) */}
+            {/* ===== SCAN HISTORY — THE ARCHIVE (localStorage-powered) ===== */}
             <div className="aegis-card" style={{ padding: 32 }}>
               <h3 className="font-mono text-xs tracking-[0.15em] uppercase mb-4 flex items-center gap-2 text-slate-500">
                 <History size={16} /> SCAN HISTORY — THE ARCHIVE
               </h3>
 
-              {history.length === 0 ? (
-                <p className="font-mono text-xs text-slate-600">No archived scans</p>
+              {scanHistory.length === 0 ? (
+                <div className="text-center py-6">
+                  <ShieldAlert size={24} className="text-slate-600 mx-auto mb-2" />
+                  <p className="font-mono text-xs text-slate-600">No archived scans</p>
+                  <p className="font-mono text-[10px] text-slate-700 mt-1">Complete a scan to populate the archive</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {history.map((scan) => (
-                    <div
-                      key={scan.scan_id}
-                      className="aegis-card p-3 cursor-pointer transition-all hover:bg-white/[0.05] hover:border-blue-500/25"
-                      onClick={() => navigate(`/dashboard/${scan.scan_id}`)}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-xs ip-highlight">{scan.scan_id}</span>
-                        <span className={`badge-${scan.overall_severity.toLowerCase()}`}>{scan.overall_severity}</span>
+                  {scanHistory.map((entry) => {
+                    const severityColor = SEVERITY_COLORS[entry.overallSeverity] || '#3b82f6';
+                    const scoreColor = entry.threatScore >= 66 ? '#ef4444' : entry.threatScore >= 31 ? '#f59e0b' : '#10b981';
+
+                    return (
+                      <div
+                        key={entry.scanId}
+                        className="relative rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.01]"
+                        style={{
+                          background: 'rgba(10,15,30,0.8)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderLeft: `3px solid ${severityColor}`,
+                          backdropFilter: 'blur(12px)',
+                          boxShadow: `0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)`,
+                        }}
+                      >
+                        {/* Top row: Scan ID + Date + Classification badge */}
+                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className="font-mono text-xs font-bold"
+                              style={{ color: '#22d3ee' }}
+                            >
+                              {entry.scanId.length > 16 ? entry.scanId.slice(0, 16) + '…' : entry.scanId}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-500">
+                              {new Date(entry.date).toLocaleString()}
+                            </span>
+                          </div>
+                          <span
+                            className="font-mono text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full"
+                            style={{
+                              color: severityColor,
+                              background: `${severityColor}15`,
+                              border: `1px solid ${severityColor}40`,
+                            }}
+                          >
+                            {entry.overallSeverity}
+                          </span>
+                        </div>
+
+                        {/* Middle row: Threat score + total threats + scan time */}
+                        <div className="flex items-center gap-4 px-4 py-2">
+                          <div className="flex items-baseline gap-1">
+                            <span
+                              className="font-display text-2xl font-bold"
+                              style={{ color: scoreColor, textShadow: `0 0 10px ${scoreColor}30` }}
+                            >
+                              {entry.threatScore}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-600">/100</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
+                            <span>{entry.totalThreats} threats</span>
+                            <span>·</span>
+                            <span
+                              className="font-bold"
+                              style={{ color: '#ef4444' }}
+                            >
+                              {entry.criticalCount}C
+                            </span>
+                            <span
+                              className="font-bold"
+                              style={{ color: '#f59e0b' }}
+                            >
+                              {entry.mediumCount}M
+                            </span>
+                            <span
+                              className="font-bold"
+                              style={{ color: '#10b981' }}
+                            >
+                              {entry.lowCount}L
+                            </span>
+                            <span>·</span>
+                            <span>{entry.scanTime}s</span>
+                          </div>
+                        </div>
+
+                        {/* Bottom row: Filename + VIEW REPORT button */}
+                        <div className="flex items-center justify-between px-4 pb-3 pt-1">
+                          <span className="font-mono text-[10px] text-slate-600 truncate max-w-[60%]">
+                            {entry.fileName}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewReport(entry);
+                            }}
+                            className="flex items-center gap-1.5 font-mono text-[10px] tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all duration-200"
+                            style={{
+                              background: 'rgba(59,130,246,0.12)',
+                              border: '1px solid rgba(59,130,246,0.25)',
+                              color: '#60a5fa',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(59,130,246,0.25)';
+                              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.5)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(59,130,246,0.12)';
+                              e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)';
+                            }}
+                          >
+                            <Eye size={12} /> VIEW REPORT
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] text-slate-600">
-                          {new Date(scan.timestamp).toLocaleString()}
-                        </span>
-                        <span className="font-mono text-[10px] text-slate-500">
-                          {scan.total_threats} threats · {scan.scan_duration}s
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

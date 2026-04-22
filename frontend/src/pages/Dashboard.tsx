@@ -416,6 +416,60 @@ function AttackTimeline({ timeline, onSelectThreat }: { timeline: ThreatEvent[];
   );
 }
 
+/* ===== SCAN HISTORY PERSISTENCE ===== */
+interface ScanHistoryEntry {
+  scanId: string;
+  fileName: string;
+  date: string;
+  threatScore: number;
+  totalThreats: number;
+  criticalCount: number;
+  mediumCount: number;
+  lowCount: number;
+  scanTime: number;
+  briefExcerpt: string;
+  overallSeverity: string;
+}
+
+function saveScanToHistory(scanData: ScanResult) {
+  try {
+    const raw = localStorage.getItem('aegis_scan_history');
+    const history: ScanHistoryEntry[] = raw ? JSON.parse(raw) : [];
+
+    // Deduplicate by scanId
+    const filtered = history.filter(h => h.scanId !== scanData.scan_id);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cb = scanData.commander_brief as any;
+    const briefLines = Array.isArray(cb) ? cb : (cb?.lines || []);
+    const briefExcerpt = briefLines.length > 0 ? String(briefLines[0]).slice(0, 200) : 'No brief available';
+
+    const entry: ScanHistoryEntry = {
+      scanId: scanData.scan_id,
+      fileName: scanData.filename || 'Unknown file',
+      date: scanData.timestamp || new Date().toISOString(),
+      threatScore: scanData.metrics.overall_threat_score,
+      totalThreats: scanData.metrics.total_threats,
+      criticalCount: scanData.metrics.critical_count,
+      mediumCount: scanData.metrics.medium_count,
+      lowCount: scanData.metrics.low_count,
+      scanTime: scanData.metrics.scan_duration,
+      briefExcerpt,
+      overallSeverity: scanData.metrics.overall_severity,
+    };
+
+    // Add new entry at the beginning
+    filtered.unshift(entry);
+
+    // Keep max 10 entries
+    const trimmed = filtered.slice(0, 10);
+
+    localStorage.setItem('aegis_scan_history', JSON.stringify(trimmed));
+  } catch {
+    // Silent fail — localStorage may be unavailable
+  }
+}
+
 /* ===== MAIN DASHBOARD ===== */
 export default function Dashboard() {
   const { scanId } = useParams<{ scanId: string }>();
@@ -437,12 +491,14 @@ export default function Dashboard() {
         setData(parsed);
         // Persist to localStorage so Report page can access it
         localStorage.setItem('aegis_scan_data', JSON.stringify(parsed));
+        saveScanToHistory(parsed);
         setLoading(false);
       } else {
         // Fallback if not in session storage
         import('../mockData').then(({ MOCK_SCAN_RESULT }) => {
           setData(MOCK_SCAN_RESULT);
           localStorage.setItem('aegis_scan_data', JSON.stringify(MOCK_SCAN_RESULT));
+          saveScanToHistory(MOCK_SCAN_RESULT);
           setLoading(false);
         });
       }
@@ -451,6 +507,7 @@ export default function Dashboard() {
       getScanResults(scanId).then(d => {
         setData(d);
         localStorage.setItem('aegis_scan_data', JSON.stringify(d));
+        saveScanToHistory(d);
         setLoading(false);
       }).catch(() => setLoading(false));
     }
