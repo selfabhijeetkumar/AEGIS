@@ -77,6 +77,7 @@ export default function Upload() {
   const [progress, setProgress] = useState(0);
   const [threatCount, setThreatCount] = useState(0);
   const [error, setError] = useState('');
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
 
   const processFile = useCallback(async (action: () => Promise<{ scan_id: string; message: string; totalThreats?: number }>) => {
     setUploading(true);
@@ -129,27 +130,44 @@ export default function Upload() {
     // Never falls back to demo data — shows error instead
     processFile(async () => {
       console.log('[AEGIS] Starting real file upload:', acceptedFiles[0].name);
-      const result = await uploadFile(acceptedFiles[0]);
-      console.log('[AEGIS] Upload response:', result);
 
-      const realScanId = result.scan_id;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const totalThreats = (result as any).total_threats || 0;
-      console.log('[AEGIS] Real scan ID:', realScanId, '| Threats:', totalThreats);
+      const timeout1 = setTimeout(() => setLoadingMessage('⚡ Initializing secure ML engine... (first request may take 30 seconds)'), 5000);
+      const timeout2 = setTimeout(() => setLoadingMessage('🔄 Running Isolation Forest anomaly detection...'), 15000);
+      const timeout3 = setTimeout(() => setLoadingMessage('📊 Almost ready — classifying threats against MITRE ATT&CK...'), 25000);
 
-      // Fetch full scan data from backend and store in sessionStorage
-      // so Dashboard can load it without another API call
       try {
-        const { getScanResults } = await import('../services/api');
-        const fullData = await getScanResults(realScanId);
-        console.log('[AEGIS] Full scan data fetched, storing in sessionStorage');
-        sessionStorage.setItem(`aegis-scan-${realScanId}`, JSON.stringify(fullData));
-      } catch (fetchErr) {
-        console.warn('[AEGIS] Could not fetch full scan data, Dashboard will retry via API:', fetchErr);
-      }
+        const result = await uploadFile(acceptedFiles[0]);
+        console.log('[AEGIS] Upload response:', result);
 
-      console.log('[AEGIS] Navigating to:', `/dashboard/${realScanId}`);
-      return { scan_id: realScanId, message: result.message, totalThreats };
+        const realScanId = result.scan_id;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalThreats = (result as any).total_threats || 0;
+        console.log('[AEGIS] Real scan ID:', realScanId, '| Threats:', totalThreats);
+
+        // Fetch full scan data from backend and store in sessionStorage
+        // so Dashboard can load it without another API call
+        try {
+          const { getScanResults } = await import('../services/api');
+          const fullData = await getScanResults(realScanId);
+          console.log('[AEGIS] Full scan data fetched, storing in sessionStorage');
+          sessionStorage.setItem(`aegis-scan-${realScanId}`, JSON.stringify(fullData));
+        } catch (fetchErr) {
+          console.warn('[AEGIS] Could not fetch full scan data, Dashboard will retry via API:', fetchErr);
+        }
+
+        console.log('[AEGIS] Navigating to:', `/dashboard/${realScanId}`);
+        clearTimeout(timeout1);
+        clearTimeout(timeout2);
+        clearTimeout(timeout3);
+        setLoadingMessage('');
+        return { scan_id: realScanId, message: result.message, totalThreats };
+      } catch (err) {
+        clearTimeout(timeout1);
+        clearTimeout(timeout2);
+        clearTimeout(timeout3);
+        setLoadingMessage('');
+        throw err;
+      }
     });
   }, [processFile]);
 
@@ -397,6 +415,17 @@ export default function Upload() {
             <p className="relative z-10 font-mono text-xs text-slate-500">
               {Math.floor(Math.min(progress, 100))}%
             </p>
+
+            {/* Cold start loading messages */}
+            {loadingMessage && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4 font-mono text-cyan-400 text-sm relative z-10"
+              >
+                {loadingMessage}
+              </motion.div>
+            )}
 
             {/* Threat count reveal */}
             {threatCount > 0 && (
