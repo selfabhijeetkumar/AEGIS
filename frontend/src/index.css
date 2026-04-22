@@ -60,6 +60,11 @@ body {
   body { cursor: auto; }
 }
 
+/* Restore cursor on touch / mobile devices */
+@media (pointer: coarse) {
+  body { cursor: auto; }
+}
+
 /* DO NOT REMOVE — PERMANENT VIGNETTE OVERLAY */
 body::after {
   content: '';
