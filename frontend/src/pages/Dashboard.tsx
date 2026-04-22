@@ -445,18 +445,32 @@ function saveScanToHistory(scanData: ScanResult) {
 
     const historyId = `scan-${Date.now()}`;
 
+    // Add slight random variation for demo scans so history entries look unique
+    const isDemo = scanData.scan_id === 'demo-cicids-2017';
+    const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randFloat = (min: number, max: number) => Math.round((Math.random() * (max - min) + min) * 10) / 10;
+
+    const totalThreats = isDemo ? randInt(13, 18) : scanData.metrics.total_threats;
+    const criticalCount = isDemo ? randInt(4, 7) : scanData.metrics.critical_count;
+    const threatScore = isDemo ? randInt(82, 94) : scanData.metrics.overall_threat_score;
+    const scanTime = isDemo ? randFloat(7.2, 12.4) : scanData.metrics.scan_duration;
+    // Derive medium/low from remainder so they sum correctly
+    const remaining = totalThreats - criticalCount;
+    const mediumCount = isDemo ? Math.floor(remaining / 2) : scanData.metrics.medium_count;
+    const lowCount = isDemo ? remaining - mediumCount : scanData.metrics.low_count;
+
     const entry: ScanHistoryEntry = {
       historyId,
       scanId: historyId,
       routeScanId: scanData.scan_id,
       fileName: scanData.filename || 'Unknown file',
       date: new Date().toLocaleString(),
-      threatScore: scanData.metrics.overall_threat_score,
-      totalThreats: scanData.metrics.total_threats,
-      criticalCount: scanData.metrics.critical_count,
-      mediumCount: scanData.metrics.medium_count,
-      lowCount: scanData.metrics.low_count,
-      scanTime: scanData.metrics.scan_duration,
+      threatScore,
+      totalThreats,
+      criticalCount,
+      mediumCount,
+      lowCount,
+      scanTime,
       briefExcerpt,
       overallSeverity: scanData.metrics.overall_severity,
     };
