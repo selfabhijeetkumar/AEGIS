@@ -150,7 +150,7 @@ ACCESS LEVEL  : UNRESTRICTED (Public Demo)
 DATASET       : CICIDS 2017 — Canadian Institute for Cybersecurity
 THREAT SCORE  : 87/100 CRITICAL
 TOTAL THREATS : 15 detected
-SCAN TIME     : 8.7 seconds
+SCAN TIME     : 12 seconds
 ```
 
 ---
