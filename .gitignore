@@ -1,0 +1,51 @@
+# ─── Large data files ────────────────────────────────────────────────────────
+# These are generated artefacts from the pipeline and must never be committed.
+# Store originals locally or in cloud storage (GDrive, S3, etc.)
+
+# CSV datasets (raw + combined)
+*.csv
+data/*.csv
+
+# NumPy arrays (sequence / baseline arrays)
+*.npy
+data/*.npy
+
+# Scikit-learn scalers and serialised objects
+*.pkl
+data/*.pkl
+
+# PyTorch model weights
+*.pth
+data/*.pth
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Jupyter ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── IDE / OS ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Logs and temp ───────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
