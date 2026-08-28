@@ -5,7 +5,7 @@ import {
   Download, History, Menu, Shield, Check, ShieldAlert, Clock, Trash2
 } from 'lucide-react';
 import { getScanResults, type ScanResult } from '../services/api';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 

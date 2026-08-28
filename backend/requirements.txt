@@ -2,6 +2,8 @@ fastapi
 uvicorn
 pandas
 scikit-learn
+torch
+joblib
 python-multipart
 reportlab
 requests

@@ -205,7 +205,7 @@ export default function Landing() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
   const features = [
-    { title: 'AI Anomaly Detection', desc: 'Isolation Forest ML identifies hidden threats in millions of log entries', icon: <Brain size={24} /> },
+    { title: 'AI Anomaly Detection', desc: 'LSTM Sequence Model ML identifies hidden threats in temporal network flow sequences', icon: <Brain size={24} /> },
     { title: 'MITRE ATT&CK Mapping', desc: 'Every threat auto-classified with official technique codes and tactics', icon: <Target size={24} /> },
     { title: 'Gemini AI Explanations', desc: 'Plain-language intelligence briefs for every detected threat event', icon: <Sparkles size={24} /> },
     { title: 'IP Geolocation Tracking', desc: 'Trace every attacker to their origin — country, city, ISP', icon: <Globe size={24} /> },
@@ -215,7 +215,7 @@ export default function Landing() {
 
   const steps = [
     { num: '01', title: 'INGEST', desc: 'Upload any log file — CSV, raw text, CICIDS format', icon: <UploadCloud size={32} className="text-blue-400" /> },
-    { num: '02', title: 'ANALYZE', desc: 'Isolation Forest + feature extraction identifies anomalies', icon: <Activity size={32} className="text-blue-400" /> },
+    { num: '02', title: 'ANALYZE', desc: 'LSTM Sequence Model + temporal feature extraction identifies anomalies', icon: <Activity size={32} className="text-blue-400" /> },
     { num: '03', title: 'CLASSIFY', desc: 'MITRE ATT&CK mapping with AI-powered explanations', icon: <Zap size={32} className="text-slate-400" /> },
     { num: '04', title: 'BRIEF', desc: 'Full incident report with Commander\'s Brief generated', icon: <ShieldCheck size={32} className="text-slate-400" /> },
   ];

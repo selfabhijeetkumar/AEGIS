@@ -1,0 +1,159 @@
+{
+  "metadata": {
+    "dataset": "CIC-IDS2017",
+    "framework": "MITRE ATT&CK v14",
+    "reused_from": "AEGIS Backend (threat_classifier.py)",
+    "total_classes": 15,
+    "total_test_sequences": 119998,
+    "attack_threat_sequences": 24443
+  },
+  "tactics_summary": {
+    "None": {
+      "test_count": 95555,
+      "pct_total": 79.6305,
+      "pct_threats": 0.0
+    },
+    "Command and Control": {
+      "test_count": 78,
+      "pct_total": 0.065,
+      "pct_threats": 0.3191
+    },
+    "Impact": {
+      "test_count": 16737,
+      "pct_total": 13.9477,
+      "pct_threats": 68.4736
+    },
+    "Credential Access": {
+      "test_count": 587,
+      "pct_total": 0.4892,
+      "pct_threats": 2.4015
+    },
+    "Initial Access / Collection": {
+      "test_count": 0,
+      "pct_total": 0.0,
+      "pct_threats": 0.0
+    },
+    "Initial Access / Execution": {
+      "test_count": 3,
+      "pct_total": 0.0025,
+      "pct_threats": 0.0123
+    },
+    "Reconnaissance / Discovery": {
+      "test_count": 6930,
+      "pct_total": 5.7751,
+      "pct_threats": 28.3517
+    },
+    "Initial Access": {
+      "test_count": 108,
+      "pct_total": 0.09,
+      "pct_threats": 0.4418
+    }
+  },
+  "mappings": {
+    "BENIGN": {
+      "tactic": "None",
+      "technique_id": "N/A",
+      "technique_name": "Normal Authorized Traffic",
+      "stage": "Baseline",
+      "description": "Legitimate baseline communications and operations without adversarial intent."
+    },
+    "PortScan": {
+      "tactic": "Reconnaissance / Discovery",
+      "technique_id": "T1046",
+      "technique_name": "Network Service Scanning",
+      "stage": "Reconnaissance",
+      "description": "Adversary actively probes IPs and ports to discover live hosts and open listening services."
+    },
+    "DDoS": {
+      "tactic": "Impact",
+      "technique_id": "T1498.001",
+      "technique_name": "Direct Network Flood",
+      "stage": "Disruption",
+      "description": "Volumetric packet flooding designed to exhaust bandwidth and disable network edge devices."
+    },
+    "DoS Hulk": {
+      "tactic": "Impact",
+      "technique_id": "T1499.002",
+      "technique_name": "HTTP Flood (Application Exhaustion)",
+      "stage": "Disruption",
+      "description": "Obfuscated HTTP GET flood generating dynamic URLs to defeat web server caches."
+    },
+    "DoS GoldenEye": {
+      "tactic": "Impact",
+      "technique_id": "T1499.002",
+      "technique_name": "HTTP Keep-Alive & No-Cache Flood",
+      "stage": "Disruption",
+      "description": "Application-layer denial of service consuming server worker threads via keep-alive manipulation."
+    },
+    "DoS slowloris": {
+      "tactic": "Impact",
+      "technique_id": "T1499.003",
+      "technique_name": "Slowloris Connection Starvation",
+      "stage": "Disruption",
+      "description": "Slow, persistent partial HTTP headers holding concurrent connection slots open indefinitely."
+    },
+    "DoS Slowhttptest": {
+      "tactic": "Impact",
+      "technique_id": "T1499.003",
+      "technique_name": "Slow Read / Slow Request Body",
+      "stage": "Disruption",
+      "description": "Slow HTTP POST body transmissions starving target server resources with minimal bandwidth."
+    },
+    "FTP-Patator": {
+      "tactic": "Credential Access",
+      "technique_id": "T1110.001",
+      "technique_name": "Password Guessing: FTP Brute Force",
+      "stage": "Credential Harvesting",
+      "description": "Systematic automated dictionary/credential guessing targeting FTP authentication (Port 21)."
+    },
+    "SSH-Patator": {
+      "tactic": "Credential Access",
+      "technique_id": "T1110.001",
+      "technique_name": "Password Guessing: SSH Brute Force",
+      "stage": "Credential Harvesting",
+      "description": "High-frequency credential brute-forcing targeting secure remote shell services (Port 22)."
+    },
+    "Web Attack ? Brute Force": {
+      "tactic": "Initial Access",
+      "technique_id": "T1110.001",
+      "technique_name": "Password Guessing: Web Application Login",
+      "stage": "Initial Access",
+      "description": "Automated login form submission to compromise web application user accounts."
+    },
+    "Web Attack ? XSS": {
+      "tactic": "Initial Access",
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application: Cross-Site Scripting",
+      "stage": "Initial Access",
+      "description": "Injecting malicious client-side scripts into web applications to execute in user browser contexts."
+    },
+    "Web Attack ? Sql Injection": {
+      "tactic": "Initial Access",
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application: SQL Injection",
+      "stage": "Initial Access",
+      "description": "Injecting structured database query syntax to bypass authentication or extract backend data."
+    },
+    "Infiltration": {
+      "tactic": "Initial Access / Execution",
+      "technique_id": "T1059",
+      "technique_name": "Command and Scripting Interpreter: Multi-Stage Infiltration",
+      "stage": "Execution & Lateral Movement",
+      "description": "Compromising an internal workstation followed by post-exploitation lateral scanning."
+    },
+    "Bot": {
+      "tactic": "Command and Control",
+      "technique_id": "T1071.001",
+      "technique_name": "Application Layer Protocol: C2 Beaconing",
+      "stage": "Command & Control",
+      "description": "Periodic outbound network beaconing communicating with adversary Command and Control infrastructure."
+    },
+    "Heartbleed": {
+      "tactic": "Initial Access / Collection",
+      "technique_id": "T1190",
+      "technique_name": "Exploit Public-Facing Application: OpenSSL Memory Leak",
+      "stage": "Initial Access",
+      "description": "Exploiting OpenSSL TLS heartbeat extension (CVE-2014-0160) to read server memory buffers."
+    }
+  }
+}

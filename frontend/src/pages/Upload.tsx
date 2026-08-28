@@ -14,7 +14,7 @@ const EASE = [0.16, 1, 0.3, 1] as const;
 const LOADING_PHASES = [
   { pct: 20, text: 'SECURING CONNECTION...', sub: 'Establishing encrypted channel', icon: <Lock size={20} /> },
   { pct: 50, text: 'PARSING LOG STRUCTURE...', sub: 'Extracting network flow features', icon: <BarChart3 size={20} /> },
-  { pct: 80, text: 'RUNNING ISOLATION FOREST...', sub: 'Running anomaly detection model', icon: <Brain size={20} /> },
+  { pct: 80, text: 'RUNNING LSTM SEQUENCE MODEL...', sub: 'Running temporal sequence forecasting model', icon: <Brain size={20} /> },
   { pct: 95, text: 'MAPPING MITRE ATT&CK...', sub: 'Classifying threat techniques', icon: <Target size={20} /> },
   { pct: 100, text: 'THREATS DETECTED.', sub: '', icon: <AlertTriangle size={20} className="text-red-400" /> },
 ];
@@ -132,7 +132,7 @@ export default function Upload() {
       console.log('[AEGIS] Starting real file upload:', acceptedFiles[0].name);
 
       const timeout1 = setTimeout(() => setLoadingMessage('⚡ Initializing secure ML engine... (first request may take 30 seconds)'), 5000);
-      const timeout2 = setTimeout(() => setLoadingMessage('🔄 Running Isolation Forest anomaly detection...'), 15000);
+      const timeout2 = setTimeout(() => setLoadingMessage('🔄 Running LSTM Sequence Model forecasting...'), 15000);
       const timeout3 = setTimeout(() => setLoadingMessage('📊 Almost ready — classifying threats against MITRE ATT&CK...'), 25000);
 
       try {

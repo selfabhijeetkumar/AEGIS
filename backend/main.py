@@ -50,6 +50,58 @@ async def health_check():
     return {"status": "operational", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/api/system-status")
+async def system_status():
+    """
+    Returns local system compute device, CUDA availability, and offline sequence engine status.
+    100% OFFLINE — Zero external cloud / Gemini calls.
+    """
+    from threat_classifier import get_system_status
+    return get_system_status()
+
+
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any, Union
+
+class SequenceAnalysisRequest(BaseModel):
+    source_ip: Optional[str] = None
+    threshold: Optional[float] = 0.5
+    flows: Optional[List[Dict[str, Any]]] = None
+
+
+@app.post("/api/analyze-sequence")
+async def analyze_sequence(req: Optional[SequenceAnalysisRequest] = None):
+    """
+    Evaluates sliding 10-flow sequence windows for one Source IP through the offline PyTorch LSTM model.
+    Returns per-window probability, decision, MITRE code/tactic, and pre_attack_escalation boolean.
+    100% OFFLINE — Zero external network or Gemini API calls.
+    """
+    from threat_classifier import analyze_sequence_flows
+    
+    threshold = 0.5
+    source_ip = None
+    flows = []
+
+    if req is not None:
+        threshold = req.threshold if req.threshold is not None else 0.5
+        source_ip = req.source_ip
+        flows = req.flows or []
+
+    # If no flows provided in request, load default sample traffic slice
+    if not flows:
+        sample_path = os.path.join(os.path.dirname(__file__), "data", "sample_traffic_demo.csv")
+        if not os.path.exists(sample_path):
+            sample_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sample_traffic_demo.csv")
+        if os.path.exists(sample_path):
+            import pandas as pd
+            df_sample = pd.read_csv(sample_path)
+            flows = df_sample.to_dict(orient="records")
+            source_ip = source_ip or "172.16.0.1"
+
+    results = analyze_sequence_flows(flows=flows, threshold=threshold, source_ip=source_ip)
+    return results
+
+
 def get_ip_geo(ip: str):
     if not hasattr(get_ip_geo, "cache"):
         get_ip_geo.cache = {}

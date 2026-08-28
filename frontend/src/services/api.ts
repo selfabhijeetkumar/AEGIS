@@ -28,6 +28,50 @@ export interface ThreatEvent {
   isp: string;
   lat: number;
   lon: number;
+  pre_attack_escalation?: boolean;
+}
+
+export interface SequenceWindow {
+  window_id: number;
+  flow_index: number;
+  timestamp: string;
+  source_ip: string;
+  dest_ip: string;
+  attack_probability: number;
+  attack_prob_pct: number;
+  decision: 'ATTACK' | 'BENIGN';
+  pre_attack_escalation: boolean;
+  true_label: string;
+  mitre_tactic: string;
+  mitre_code: string;
+  mitre_technique: string;
+  mitre_stage: string;
+  description: string;
+}
+
+export interface SequenceAnalysisResponse {
+  source_ip: string;
+  total_flows: number;
+  total_windows: number;
+  threat_windows: number;
+  escalation_windows: number;
+  threat_rate_pct: number;
+  threshold: number;
+  dominant_tactic: string;
+  mitre_tactical_breakdown: Record<string, number>;
+  sequences: SequenceWindow[];
+}
+
+export interface SystemStatusResponse {
+  status: string;
+  mode: string;
+  engine: string;
+  cuda_available: boolean;
+  device: string;
+  device_name: string;
+  input_features: number;
+  hidden_size: number;
+  window_size: number;
 }
 
 export interface ScanMetrics {
@@ -39,6 +83,7 @@ export interface ScanMetrics {
   scan_duration: number;
   overall_threat_score: number;
   overall_severity: 'CRITICAL' | 'MEDIUM' | 'LOW';
+  sequences_evaluated?: number;
 }
 
 export interface CommanderBrief {
@@ -57,6 +102,7 @@ export interface ScanResult {
   threats: ThreatEvent[];
   attack_types: Record<string, number>;
   timeline: ThreatEvent[];
+  sequence_data?: SequenceAnalysisResponse;
 }
 
 export interface ScanSummary {
@@ -84,6 +130,20 @@ export const runDemo = async (): Promise<{ scan_id: string; message: string }> =
 
 export const getScanResults = async (scanId: string): Promise<ScanResult> => {
   const { data } = await api.get(`/api/scan/${scanId}`);
+  return data;
+};
+
+export const analyzeSequence = async (params?: {
+  source_ip?: string;
+  threshold?: number;
+  flows?: Record<string, unknown>[];
+}): Promise<SequenceAnalysisResponse> => {
+  const { data } = await api.post('/api/analyze-sequence', params || { threshold: 0.5 });
+  return data;
+};
+
+export const getSystemStatus = async (): Promise<SystemStatusResponse> => {
+  const { data } = await api.get('/api/system-status');
   return data;
 };
 
