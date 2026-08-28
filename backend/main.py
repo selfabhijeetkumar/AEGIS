@@ -140,16 +140,30 @@ async def upload_file(file: UploadFile = File(...)):
     scan_id = f"AEG-2026-{datetime.now().strftime('%m%d')}-{str(uuid.uuid4())[:8].upper()}"
     start_time = time.time()
 
-    # Step 1: Read the actual uploaded file using pandas
+    # Step 1: Read the actual uploaded file using pandas with multi-encoding support
+    import io
     try:
-        df = pd.read_csv(file.file, low_memory=False, nrows=5000)
+        content = await file.read()
+        try:
+            df = pd.read_csv(io.BytesIO(content), low_memory=False, nrows=5000, encoding="utf-8")
+        except Exception:
+            try:
+                df = pd.read_csv(io.BytesIO(content), low_memory=False, nrows=5000, encoding="latin-1")
+            except Exception:
+                try:
+                    df = pd.read_csv(io.BytesIO(content), low_memory=False, nrows=5000, encoding_errors="replace")
+                except Exception:
+                    from analyzer import parse_file
+                    df = parse_file(content, file.filename)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"INTELLIGENCE FAILURE — Could not parse file: {str(e)}")
 
     # Step 2: Run Isolation Forest on actual data
     numeric_df = df.select_dtypes(include=[np.number]).fillna(0)
     if numeric_df.shape[1] < 2:
-        raise HTTPException(status_code=400, detail="INTELLIGENCE FAILURE — Not enough numeric columns in data.")
+        df["synth_len"] = df.iloc[:, 0].astype(str).str.len()
+        df["synth_entropy"] = df.iloc[:, 0].astype(str).apply(lambda s: len(set(s)))
+        numeric_df = df.select_dtypes(include=[np.number]).fillna(0)
 
     model = IsolationForest(contamination=0.05, random_state=42)
     predictions = model.fit_predict(numeric_df)
