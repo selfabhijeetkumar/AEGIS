@@ -1,4 +1,4 @@
-﻿"""
+"""
 Multi-IP Probability Timeline Generalization Analysis (v2)
 ==========================================================
 Tests whether the AEGIS LSTM early-warning behavior observed for the single
@@ -64,27 +64,28 @@ DIVIDER = "=" * 78
 # Candidate spec: attack label (partial match ok) and source IP.
 # t_idx is auto-discovered at runtime from the cleaned full-feature df.
 CANDIDATE_SPECS = [
-    {"ip": "172.16.0.1", "attack_match": "DoS Slowhttptest",        "category": "DoS (Slowhttptest)",      "color": "#d32f2f"},
-    {"ip": "172.16.0.1", "attack_match": "FTP-Patator",             "category": "FTP-Patator",             "color": "#1565c0"},
-    {"ip": "172.16.0.1", "attack_match": "Brute Force",             "category": "Web Attack (Brute Force)", "color": "#6a1b9a"},
-    {"ip": "172.16.0.1", "attack_match": "PortScan",                "category": "PortScan",                "color": "#e65100"},
+    {"ip": "172.16.0.1",    "attack_match": "DoS Slowhttptest",        "category": "DoS (Slowhttptest)",       "color": "#d32f2f"},
+    {"ip": "172.16.0.1",    "attack_match": "FTP-Patator",             "category": "FTP-Patator",              "color": "#1565c0"},
+    {"ip": "172.16.0.1",    "attack_match": "Brute Force",             "category": "Web Attack (Brute Force)",  "color": "#6a1b9a"},
+    {"ip": "172.16.0.1",    "attack_match": "PortScan",                "category": "PortScan",                 "color": "#e65100"},
+    {"ip": "192.168.10.50", "attack_match": "DDoS",                    "category": "DDoS (Isolated)",          "color": "#00838f", "min_post": 3},
 ]
 
 MISSING_CATEGORIES = [
     {
-        "category": "DDoS",
+        "category": "DDoS (Primary Attacker 172.16.0.1)",
         "reason": (
-            "172.16.0.1 is the only significant DDoS attacker in CICIDS2017. "
-            "Its DDoS flows are always preceded by sustained PortScan activity. "
-            "No contiguous BENIGN block of >=15 flows exists before DDoS onset. "
-            "192.168.10.50 has only 3 DDoS flows (insufficient). No fabricated example used."
+            "172.16.0.1 is the primary DDoS campaign attacker in CICIDS2017. "
+            "However, its DDoS flows are always preceded by sustained PortScan activity. "
+            "No contiguous BENIGN block of >=10 flows exists immediately before DDoS onset on 172.16.0.1. "
+            "We evaluated 192.168.10.50 as the only host with a pure BENIGN->DDoS transition (3 attack flows)."
         ),
     },
     {
         "category": "Bot (multi-host)",
         "reason": (
             "Bot flows exist on 192.168.10.x hosts with long benign lead-ins. "
-            "However, the v3 model (group-based zero-leakage split) achieves 0% "
+            "However, the v3 model (group-based zero-leakage split) achieves near 0% "
             "P(attack) on these unseen host IPs. Known limitation of group-split."
         ),
     },
@@ -173,7 +174,8 @@ for spec in CANDIDATE_SPECS:
         if match_str.lower() in next_lbl.lower():
             pre_b  = (is_atk[max(0, t - (LEAD_BENIGN - 1)) : t + 1] == 0).sum()
             post_a = (is_atk[t + 1 : min(len(is_atk), t + ATTACK_FLOWS + 1)] == 1).sum()
-            if pre_b >= WINDOW_SIZE and post_a >= 10:
+            min_post = spec.get("min_post", 10)
+            if pre_b >= WINDOW_SIZE and post_a >= min_post:
                 spec_full = dict(spec)
                 spec_full["t_idx"] = int(t)
                 spec_full["attack_label"] = next_lbl
@@ -267,14 +269,13 @@ for cand in CANDIDATES:
 print(f"\n{DIVIDER}")
 print("STEP 5 -- Summary Table")
 print(DIVIDER)
-print(f"\n  {'IP':<18} {'Attack Type':<28} {'P(T-2)':>8} {'P(T=0)':>8} {'P(T+1)':>8} Early Warning?")
-print("  " + "-"*18 + " " + "-"*28 + " " + "-"*8 + " " + "-"*8 + " " + "-"*8 + " " + "-"*14)
+print(f"\n| IP | Attack Type | Probability at T-2 | Probability at T0 | Early-warning signal present |")
+print(f"| :--- | :--- | ---: | ---: | :--- |")
 for r in all_results:
     pt2 = f"{r['p_tminus2']*100:.1f}%" if r["p_tminus2"] is not None else "N/A"
     pt0 = f"{r['p_t0']*100:.1f}%"      if r["p_t0"]      is not None else "N/A"
-    pt1 = f"{r['p_tplus1']*100:.1f}%"  if r["p_tplus1"]  is not None else "N/A"
     ew  = "Yes" if r["early_warn"] else "No"
-    print(f"  {r['ip']:<18} {r['category']:<28} {pt2:>8} {pt0:>8} {pt1:>8} {ew}")
+    print(f"| {r['ip']} | {r['category']} | {pt2} | {pt0} | {ew} |")
 
 print(f"\n  Missing / could-not-demonstrate:")
 for m in MISSING_CATEGORIES:
