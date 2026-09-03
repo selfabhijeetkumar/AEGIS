@@ -358,43 +358,36 @@ for name, lr_v, ls_v in [
 
 # 2. Required Specific Comparison Table (v2 vs v3)
 print(f"\n  ─── 2. Requested Side-by-Side Methodology Comparison (v2 vs v3) ───\n")
-print(f"  {'Metric':<35} | {'v2 (Random Split / Leakage)':>30} | {'v3 (Group Split / Zero Leak)':>30}")
-print(f"  {'-'*35}-+-{'-'*30}-+-{'-'*30}")
-print(f"  {'Overall F1':<35} | {v2_overall_f1*100:>29.2f}% | {lstm_f1*100:>29.2f}%")
+print(f"| Metric                        |  v2 (Potential Leakage) |  v3 (Stricter Group Split) |")
+print(f"| :---------------------------- | ----------------------: | -------------------------: |")
+print(f"| Overall F1                    |                  {v2_overall_f1*100:.2f}% |                     {lstm_f1*100:.2f}% |")
 
 # Specific requested attack classes
-target_classes = [
-    "SSH-Patator",
-    "Web Attack \x87 Brute Force" if "Web Attack \x87 Brute Force" in classes else ("Web Attack ? Brute Force" if "Web Attack ? Brute Force" in classes else "Web Attack - Brute Force"),
-    "FTP-Patator",
-]
-
-for target in ["SSH-Patator", "Web Attack ? Brute Force", "FTP-Patator"]:
-    matched_idx = None
+def get_v3_recall_str(target_name):
     for idx, cname in enumerate(classes):
-        if target.lower() in cname.lower() or cname.lower() in target.lower():
-            matched_idx = idx
-            break
-    
-    v2_val = v2_recalls.get(target, "N/A")
-    if matched_idx is not None:
-        c_info = lstm_per_class[matched_idx]
-        if c_info["total"] > 0:
-            v3_val = f"{c_info['recall']:.1f}% ({c_info['correct']}/{c_info['total']})"
-        else:
-            v3_val = "N/A (Grouped to Train Set)"
-    else:
-        v3_val = "N/A"
-    
-    label_display = target.replace("?", "-") + " Recall"
-    print(f"  {label_display:<35} | {v2_val:>30} | {v3_val:>30}")
+        if target_name.lower() in cname.lower() or cname.lower() in target_name.lower():
+            c_info = lstm_per_class[idx]
+            if c_info["total"] > 0:
+                return f"{c_info['recall']:.1f}% ({c_info['correct']}/{c_info['total']})"
+            else:
+                return "N/A (Grouped to Train Set)"
+    return "N/A"
+
+ssh_v3_val = get_v3_recall_str("SSH-Patator")
+web_v3_val = get_v3_recall_str("Web Attack")
+ftp_v3_val = get_v3_recall_str("FTP-Patator")
+
+print(f"| SSH-Patator Recall            |                  {v2_recalls['SSH-Patator']:>6} | {ssh_v3_val:>26} |")
+print(f"| Web Attack Brute Force Recall |                  {v2_recalls['Web Attack ? Brute Force']:>6} | {web_v3_val:>26} |")
+print(f"| FTP-Patator Recall            |                  {v2_recalls['FTP-Patator']:>6} | {ftp_v3_val:>26} |")
+print()
 
 # Also show Bot class which has test samples in both
 bot_idx = classes.index("Bot") if "Bot" in classes else 1
 bot_info = lstm_per_class[bot_idx]
 bot_v3_val = f"{bot_info['recall']:.1f}% ({bot_info['correct']}/{bot_info['total']})"
-print(f"  {'Bot Attack Recall':<35} | {v2_recalls['Bot']:>30} | {bot_v3_val:>30}")
-print(f"  {'BENIGN Specificity (Recall)':<35} | {v2_recalls['BENIGN']:>30} | {lstm_per_class[0]['recall']:>29.2f}%")
+print(f"  Bot Attack Recall             : v2 = {v2_recalls['Bot']} | v3 = {bot_v3_val}")
+print(f"  BENIGN Specificity (Recall)   : v2 = {v2_recalls['BENIGN']} | v3 = {lstm_per_class[0]['recall']:.2f}%")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
