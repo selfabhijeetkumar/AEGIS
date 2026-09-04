@@ -588,9 +588,11 @@ export default function Dashboard() {
     const sequences = PROBABILITIES.map((prob, i) => {
       const isAttack = prob >= th;
       const isConsecutive = i >= 2 && PROBABILITIES[i] > PROBABILITIES[i - 1] && PROBABILITIES[i - 1] > PROBABILITIES[i - 2];
-      const isElevated = prob >= 0.20;
+      // Near-threshold: within 30% of detection threshold → PRE-ATTACK zone
+      const nearThreshold = prob >= (th * 0.70) && !isAttack;
+      const isElevated = prob >= 0.15;
       const isW11 = (i === 10);
-      const isEscalating = !isAttack && (isConsecutive || isElevated || isW11);
+      const isEscalating = !isAttack && (isConsecutive || nearThreshold || isElevated || isW11);
       return {
         window_id: i + 1,
         flow_index: i + 10,
@@ -1293,9 +1295,11 @@ export default function Dashboard() {
                     const isConsecutive = idx >= 2 &&
                       seq.attack_probability > (sequenceData?.sequences[idx - 1]?.attack_probability ?? 0) &&
                       (sequenceData?.sequences[idx - 1]?.attack_probability ?? 0) > (sequenceData?.sequences[idx - 2]?.attack_probability ?? 0);
-                    const isElevated = seq.attack_probability >= 0.20;
+                    // Near-threshold: BENIGN window within 30% of detection threshold → PRE-ATTACK zone
+                    const nearThreshold = seq.attack_probability >= (threshold * 0.70) && !isAttack;
+                    const isElevated = seq.attack_probability >= 0.15;
                     const isW11 = seq.window_id === 11;
-                    const isEscalating = !isAttack && (seq.pre_attack_escalation || isConsecutive || isElevated || isW11);
+                    const isEscalating = !isAttack && (seq.pre_attack_escalation || isConsecutive || nearThreshold || isElevated || isW11);
                     const decision = isAttack ? 'ATTACK' : 'BENIGN';
 
                     return (
