@@ -26,7 +26,7 @@ from demo_data import DEMO_FILE
 app = FastAPI(
     title="AEGIS API",
     description="Advanced Engine for Guided Intelligence & Surveillance",
-    version="2.1.0"
+    version="2.2.0"
 )
 
 # CORS
