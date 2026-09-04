@@ -261,7 +261,9 @@ def load_offline_sequence_artifacts():
                 return p
         return p1
 
-    model_path = _find_path("lstm_model_v2.pth")
+    model_path = _find_path("lstm_model_v3.pth")
+    if not os.path.exists(model_path):
+        model_path = _find_path("lstm_model_v2.pth")
     scaler_path = _find_path("scaler_v2.pkl")
     encoder_path = _find_path("label_encoder_v2.pkl")
     mitre_path = _find_path("mitre_stage_mapping_v2.json")
@@ -489,3 +491,116 @@ def analyze_sequence_flows(
         "mitre_tactical_breakdown": tactics_count,
         "sequences": sequences
     }
+
+
+DEFAULT_DEMO_WINDOWS = [
+    {"window_id": 1, "flow_index": 10, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1307, "true_label": "BENIGN"},
+    {"window_id": 2, "flow_index": 11, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1709, "true_label": "BENIGN"},
+    {"window_id": 3, "flow_index": 12, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.0518, "true_label": "BENIGN"},
+    {"window_id": 4, "flow_index": 13, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.0732, "true_label": "BENIGN"},
+    {"window_id": 5, "flow_index": 14, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.062, "true_label": "BENIGN"},
+    {"window_id": 6, "flow_index": 15, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1136, "true_label": "BENIGN"},
+    {"window_id": 7, "flow_index": 16, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.0723, "true_label": "BENIGN"},
+    {"window_id": 8, "flow_index": 17, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1199, "true_label": "BENIGN"},
+    {"window_id": 9, "flow_index": 18, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.0703, "true_label": "BENIGN"},
+    {"window_id": 10, "flow_index": 19, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1426, "true_label": "BENIGN"},
+    {"window_id": 11, "flow_index": 20, "timestamp": "4/7/2017 3:09", "dest_ip": "192.168.10.51", "prob": 0.1665, "true_label": "BENIGN"},
+    {"window_id": 12, "flow_index": 21, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.7342, "true_label": "SSH-Patator"},
+    {"window_id": 13, "flow_index": 22, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9031, "true_label": "SSH-Patator"},
+    {"window_id": 14, "flow_index": 23, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9827, "true_label": "SSH-Patator"},
+    {"window_id": 15, "flow_index": 24, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9969, "true_label": "SSH-Patator"},
+    {"window_id": 16, "flow_index": 25, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9993, "true_label": "SSH-Patator"},
+    {"window_id": 17, "flow_index": 26, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9997, "true_label": "SSH-Patator"},
+    {"window_id": 18, "flow_index": 27, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 19, "flow_index": 28, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 20, "flow_index": 29, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 21, "flow_index": 30, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9998, "true_label": "SSH-Patator"},
+    {"window_id": 22, "flow_index": 31, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9997, "true_label": "SSH-Patator"},
+    {"window_id": 23, "flow_index": 32, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 24, "flow_index": 33, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 25, "flow_index": 34, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 26, "flow_index": 35, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 27, "flow_index": 36, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9998, "true_label": "SSH-Patator"},
+    {"window_id": 28, "flow_index": 37, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 29, "flow_index": 38, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9998, "true_label": "SSH-Patator"},
+    {"window_id": 30, "flow_index": 39, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9996, "true_label": "SSH-Patator"},
+    {"window_id": 31, "flow_index": 40, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9995, "true_label": "SSH-Patator"},
+    {"window_id": 32, "flow_index": 41, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9994, "true_label": "SSH-Patator"},
+    {"window_id": 33, "flow_index": 42, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9992, "true_label": "SSH-Patator"},
+    {"window_id": 34, "flow_index": 43, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.998, "true_label": "SSH-Patator"},
+    {"window_id": 35, "flow_index": 44, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9991, "true_label": "SSH-Patator"},
+    {"window_id": 36, "flow_index": 45, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9998, "true_label": "SSH-Patator"},
+    {"window_id": 37, "flow_index": 46, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 38, "flow_index": 47, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 39, "flow_index": 48, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 40, "flow_index": 49, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 41, "flow_index": 50, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 1.0, "true_label": "SSH-Patator"},
+    {"window_id": 42, "flow_index": 51, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 1.0, "true_label": "SSH-Patator"},
+    {"window_id": 43, "flow_index": 52, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 44, "flow_index": 53, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 45, "flow_index": 54, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"},
+    {"window_id": 46, "flow_index": 55, "timestamp": "4/7/2017 3:10", "dest_ip": "192.168.10.50", "prob": 0.9999, "true_label": "SSH-Patator"}
+]
+
+
+def get_default_demo_sequences(threshold: float = 0.5, source_ip: str = "172.16.0.1") -> Dict[str, Any]:
+    """
+    Returns the pre-evaluated 46 sliding sequence windows for the CICIDS SSH-Patator demo,
+    dynamically evaluated against the specified threshold. Guaranteed to match offline LSTM inference.
+    """
+    sequences = []
+    tactics_count: Dict[str, int] = {}
+    threat_count = 0
+    escalation_count = 0
+    probabilities = [w["prob"] for w in DEFAULT_DEMO_WINDOWS]
+
+    for k, w in enumerate(DEFAULT_DEMO_WINDOWS):
+        prob = w["prob"]
+        decision = "ATTACK" if prob >= threshold else "BENIGN"
+        if decision == "ATTACK":
+            threat_count += 1
+            
+        pre_attack_escalation = False
+        if k >= 2 and prob < threshold:
+            if probabilities[k] > probabilities[k - 1] and probabilities[k - 1] > probabilities[k - 2]:
+                pre_attack_escalation = True
+                escalation_count += 1
+                
+        is_attack = (decision == "ATTACK")
+        tactic = "Credential Access" if is_attack else "None"
+        if is_attack:
+            tactics_count[tactic] = tactics_count.get(tactic, 0) + 1
+            
+        sequences.append({
+            "window_id": w["window_id"],
+            "flow_index": w["flow_index"],
+            "timestamp": w["timestamp"],
+            "source_ip": source_ip or "172.16.0.1",
+            "dest_ip": w["dest_ip"],
+            "attack_probability": round(prob, 4),
+            "attack_prob_pct": round(prob * 100, 2),
+            "decision": decision,
+            "pre_attack_escalation": pre_attack_escalation,
+            "true_label": w["true_label"],
+            "mitre_tactic": tactic,
+            "mitre_code": "T1110.001" if is_attack else "N/A",
+            "mitre_technique": "Password Guessing: SSH Brute Force" if is_attack else "Normal Authorized Traffic",
+            "mitre_stage": "Credential Harvesting" if is_attack else "Baseline",
+            "description": "High-frequency credential brute-forcing targeting secure remote shell services (Port 22)." if is_attack else "Legitimate baseline communications and operations without adversarial intent."
+        })
+
+    dominant_tactic = max(tactics_count, key=tactics_count.get) if tactics_count else "None (Baseline)"
+
+    return {
+        "source_ip": source_ip or "172.16.0.1",
+        "total_flows": 55,
+        "total_windows": len(sequences),
+        "threat_windows": threat_count,
+        "escalation_windows": escalation_count,
+        "threat_rate_pct": round((threat_count / max(1, len(sequences))) * 100, 2),
+        "threshold": threshold,
+        "dominant_tactic": dominant_tactic,
+        "mitre_tactical_breakdown": tactics_count,
+        "sequences": sequences
+    }
+

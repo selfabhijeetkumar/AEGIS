@@ -5,6 +5,7 @@
 # CSV datasets (raw + combined)
 *.csv
 data/*.csv
+!backend/data/*.csv
 
 # NumPy arrays (sequence / baseline arrays)
 *.npy
@@ -13,10 +14,13 @@ data/*.npy
 # Scikit-learn scalers and serialised objects
 *.pkl
 data/*.pkl
+!backend/models/*.pkl
 
 # PyTorch model weights
 *.pth
 data/*.pth
+!backend/models/*.pth
+!backend/models/*.json
 
 # ─── Python ──────────────────────────────────────────────────────────────────
 __pycache__/
