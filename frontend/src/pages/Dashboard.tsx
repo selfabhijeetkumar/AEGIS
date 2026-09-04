@@ -587,7 +587,13 @@ export default function Dashboard() {
 
     const sequences = PROBABILITIES.map((prob, i) => {
       const isAttack = prob >= th;
-      const isEscalating = i === 10 && prob < th;
+      const isEscalating =
+        i >= 2 &&
+        prob < th &&
+        PROBABILITIES[i] > PROBABILITIES[i - 1] &&
+        PROBABILITIES[i - 1] > PROBABILITIES[i - 2] &&
+        PROBABILITIES[i - 1] < th &&
+        PROBABILITIES[i - 2] < th;
       return {
         window_id: i + 1,
         flow_index: i + 10,
@@ -610,13 +616,14 @@ export default function Dashboard() {
     });
 
     const threatWindows = sequences.filter(s => s.decision === 'ATTACK').length;
+    const escalationWindows = sequences.filter(s => s.pre_attack_escalation).length;
 
     setSequenceData({
       source_ip: '172.16.0.1',
       total_flows: 55,
       total_windows: 46,
       threat_windows: threatWindows,
-      escalation_windows: 1,
+      escalation_windows: escalationWindows,
       threat_rate_pct: Math.round((threatWindows / 46) * 1000) / 10,
       threshold: th,
       dominant_tactic: 'Credential Access',
