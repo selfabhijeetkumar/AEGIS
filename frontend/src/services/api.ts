@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE)
-  ? import.meta.env.VITE_API_BASE
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE))
+  ? (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE)
   : (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? 'http://localhost:8000'
     : 'https://aegis-backend-748p.onrender.com';
