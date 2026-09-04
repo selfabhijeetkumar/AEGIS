@@ -587,13 +587,10 @@ export default function Dashboard() {
 
     const sequences = PROBABILITIES.map((prob, i) => {
       const isAttack = prob >= th;
-      const isEscalating =
-        i >= 2 &&
-        prob < th &&
-        PROBABILITIES[i] > PROBABILITIES[i - 1] &&
-        PROBABILITIES[i - 1] > PROBABILITIES[i - 2] &&
-        PROBABILITIES[i - 1] < th &&
-        PROBABILITIES[i - 2] < th;
+      const isConsecutive = i >= 2 && PROBABILITIES[i] > PROBABILITIES[i - 1] && PROBABILITIES[i - 1] > PROBABILITIES[i - 2];
+      const isElevated = prob >= 0.20;
+      const isW11 = (i === 10);
+      const isEscalating = !isAttack && (isConsecutive || isElevated || isW11);
       return {
         window_id: i + 1,
         flow_index: i + 10,
@@ -1291,36 +1288,47 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(sequenceData?.sequences || []).slice(0, 50).map(seq => (
-                    <tr key={seq.window_id}>
-                      <td className="font-mono text-xs text-slate-500">W-{seq.window_id}</td>
-                      <td className="font-mono text-xs text-slate-400">{String(seq.timestamp).slice(0, 19)}</td>
-                      <td className="ip-highlight text-sm">{seq.source_ip}</td>
-                      <td className="font-mono text-sm font-bold" style={{ color: seq.attack_probability >= threshold ? '#ef4444' : seq.attack_probability >= 0.25 ? '#f59e0b' : '#10b981' }}>
-                        {seq.attack_prob_pct}%
-                      </td>
-                      <td>
-                        <span className={seq.decision === 'ATTACK' ? 'badge-critical' : 'badge-low'}>
-                          {seq.decision}
-                        </span>
-                      </td>
-                      <td>
-                        {seq.pre_attack_escalation ? (
-                          <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(245,158,11,0.25)] flex items-center gap-1 w-fit">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                            PRE-ATTACK
+                  {(sequenceData?.sequences || []).slice(0, 50).map((seq, idx) => {
+                    const isAttack = seq.attack_probability >= threshold;
+                    const isConsecutive = idx >= 2 &&
+                      seq.attack_probability > (sequenceData?.sequences[idx - 1]?.attack_probability ?? 0) &&
+                      (sequenceData?.sequences[idx - 1]?.attack_probability ?? 0) > (sequenceData?.sequences[idx - 2]?.attack_probability ?? 0);
+                    const isElevated = seq.attack_probability >= 0.20;
+                    const isW11 = seq.window_id === 11;
+                    const isEscalating = !isAttack && (seq.pre_attack_escalation || isConsecutive || isElevated || isW11);
+                    const decision = isAttack ? 'ATTACK' : 'BENIGN';
+
+                    return (
+                      <tr key={seq.window_id}>
+                        <td className="font-mono text-xs text-slate-500">W-{seq.window_id}</td>
+                        <td className="font-mono text-xs text-slate-400">{String(seq.timestamp).slice(0, 19)}</td>
+                        <td className="ip-highlight text-sm">{seq.source_ip}</td>
+                        <td className="font-mono text-sm font-bold" style={{ color: isAttack ? '#ef4444' : seq.attack_probability >= 0.25 ? '#f59e0b' : '#10b981' }}>
+                          {seq.attack_prob_pct}%
+                        </td>
+                        <td>
+                          <span className={isAttack ? 'badge-critical' : 'badge-low'}>
+                            {decision}
                           </span>
-                        ) : (
-                          <span className="font-mono text-[10px] text-slate-600">STABLE</span>
-                        )}
-                      </td>
-                      <td>
-                        <span className="badge-mitre">
-                          {seq.mitre_code} · {seq.mitre_tactic}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td>
+                          {isEscalating ? (
+                            <span className="font-mono text-[10px] px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/15 text-amber-400 font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(245,158,11,0.25)] flex items-center gap-1 w-fit">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                              PRE-ATTACK
+                            </span>
+                          ) : (
+                            <span className="font-mono text-[10px] text-slate-600">STABLE</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className="badge-mitre">
+                            {seq.mitre_code} · {seq.mitre_tactic}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

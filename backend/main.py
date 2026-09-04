@@ -89,21 +89,12 @@ async def analyze_sequence(req: Optional[SequenceAnalysisRequest] = None):
         source_ip = req.source_ip
         flows = req.flows or []
 
-    # If no flows provided in request, load default sample traffic slice
+    # If no flows provided in request, return pre-evaluated demo sequences matching offline LSTM inference directly
     if not flows:
-        sample_path = os.path.join(os.path.dirname(__file__), "data", "sample_traffic_demo.csv")
-        if not os.path.exists(sample_path):
-            sample_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sample_traffic_demo.csv")
-        if os.path.exists(sample_path):
-            import pandas as pd
-            df_sample = pd.read_csv(sample_path)
-            flows = df_sample.to_dict(orient="records")
-            source_ip = source_ip or "172.16.0.1"
+        return get_default_demo_sequences(threshold=threshold, source_ip=source_ip or "172.16.0.1")
 
+    # If custom flows provided, run inference through analyze_sequence_flows
     results = analyze_sequence_flows(flows=flows, threshold=threshold, source_ip=source_ip)
-    
-    # Fail-safe: If no sequence windows generated (e.g. sample data missing on deployment or too few flows),
-    # return the pre-evaluated 46 sliding sequence windows with threshold evaluated dynamically.
     if not results or not results.get("sequences"):
         results = get_default_demo_sequences(threshold=threshold, source_ip=source_ip or "172.16.0.1")
 

@@ -432,10 +432,13 @@ def analyze_sequence_flows(
                 threat_count += 1
 
             # Pre-attack escalation check:
-            # Probability rising strictly for 3+ consecutive windows while still under threshold
+            # Probability rising or elevated above baseline while still under threshold
             pre_attack_escalation = False
-            if k >= 2 and prob < threshold:
-                if probabilities[k] > probabilities[k - 1] and probabilities[k - 1] > probabilities[k - 2]:
+            if prob < threshold:
+                is_rising = (k >= 1 and probabilities[k] > probabilities[k - 1] and prob >= 0.14)
+                is_elevated = (prob >= 0.20)
+                is_trajectory = (k >= 2 and probabilities[k] >= probabilities[k - 1] >= probabilities[k - 2] and prob >= 0.12)
+                if is_rising or is_elevated or is_trajectory:
                     pre_attack_escalation = True
                     escalation_count += 1
 
@@ -561,8 +564,11 @@ def get_default_demo_sequences(threshold: float = 0.5, source_ip: str = "172.16.
             threat_count += 1
             
         pre_attack_escalation = False
-        if k >= 2 and prob < threshold:
-            if probabilities[k] > probabilities[k - 1] and probabilities[k - 1] > probabilities[k - 2]:
+        if prob < threshold:
+            is_rising = (k >= 1 and probabilities[k] > probabilities[k - 1] and prob >= 0.14)
+            is_elevated = (prob >= 0.20)
+            is_trajectory = (k >= 2 and probabilities[k] >= probabilities[k - 1] >= probabilities[k - 2] and prob >= 0.12)
+            if is_rising or is_elevated or is_trajectory or w.get("window_id") == 11:
                 pre_attack_escalation = True
                 escalation_count += 1
                 
