@@ -11,6 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+except ImportError:
+    pass
+
 from models import UploadResponse, ScanResult, ScanSummary
 from analyzer import analyze_log_file
 from pdf_generator import generate_pdf_report
@@ -60,6 +67,15 @@ async def system_status():
     """
     from threat_classifier import get_system_status
     return get_system_status()
+
+
+@app.get("/api/gemini-status")
+async def gemini_status():
+    """
+    Returns live validation status of Google Gemini API key and model connectivity.
+    """
+    from gemini_service import check_gemini_status
+    return check_gemini_status()
 
 
 from pydantic import BaseModel
@@ -271,7 +287,25 @@ async def upload_file(file: UploadFile = File(...)):
 
     threats.sort(key=lambda t: t["severity_score"], reverse=True)
 
-    # Step 5: Calculate REAL metrics
+    # Step 5: Generate AI intelligence explanations via Gemini
+    from gemini_service import generate_commander_brief, generate_threat_explanation
+    for t in threats[:8]:
+        t_info = {
+            "source_ip": t["source_ip"],
+            "threat_type": t["threat_type"],
+            "mitre_code": t["mitre_code"],
+            "mitre_technique": t["mitre_technique"],
+            "bytes_transferred": t["bytes_transferred"],
+            "country": t["country"],
+            "severity": t["severity"]
+        }
+        ai_resp = generate_threat_explanation(t_info, use_mock=False)
+        if ai_resp and ai_resp.get("ai_explanation"):
+            t["ai_explanation"] = ai_resp["ai_explanation"]
+            if ai_resp.get("recommended_actions"):
+                t["recommended_actions"] = ai_resp["recommended_actions"]
+
+    # Step 6: Calculate REAL metrics
     total_threats = len(threats)
     overall_severity = "CRITICAL" if critical_count > 0 else ("MEDIUM" if medium_count > 0 else ("LOW" if low_count > 0 else "NONE"))
     overall_score = int(min(100, (critical_count * 90 + medium_count * 50 + low_count * 15) / max(1, total_threats)))
@@ -287,10 +321,27 @@ async def upload_file(file: UploadFile = File(...)):
         "overall_severity": overall_severity
     }
 
-    # Step 6: Return real data in same JSON format
+    # Step 7: Return real data in same JSON format
     top_attack = max(attack_types, key=attack_types.get) if attack_types else "Unknown"
     most_dangerous_ips = [t['source_ip'] for t in threats if t['severity'] == 'CRITICAL']
     most_dangerous_ip = most_dangerous_ips[0] if most_dangerous_ips else "Unknown Endpoint"
+
+    timestamps = [t["timestamp"] for t in threats if t.get("timestamp")]
+    brief_stats = {
+        "total_threats": total_threats,
+        "critical_count": critical_count,
+        "medium_count": medium_count,
+        "unique_ips": len(unique_ips),
+        "attack_types": attack_types,
+        "first_timestamp": timestamps[0] if timestamps else "00:00",
+        "last_timestamp": timestamps[-1] if timestamps else "23:59"
+    }
+    ai_brief = generate_commander_brief(brief_stats)
+    brief_lines = ai_brief.get("lines") if ai_brief and ai_brief.get("lines") else [
+        f"CRITICAL ASSET ALERT: {critical_count} level-1 anomalies detected requiring immediate kinetic response.",
+        f"PRIMARY THREAT VECTOR: High volume of '{top_attack}' originating primarily from {most_dangerous_ip}.",
+        f"TACTICAL DIRECTIVE: Quarantine source {most_dangerous_ip} immediately and deploy Deep Packet Inspection on perimeter."
+    ]
 
     scan_data = {
         "scan_id": scan_id,
@@ -298,11 +349,7 @@ async def upload_file(file: UploadFile = File(...)):
         "filename": file.filename,
         "metrics": metrics,
         "commander_brief": {
-            "lines": [
-                f"CRITICAL ASSET ALERT: {critical_count} level-1 anomalies detected requiring immediate kinetic response.",
-                f"PRIMARY THREAT VECTOR: High volume of '{top_attack}' originating primarily from {most_dangerous_ip}.",
-                f"TACTICAL DIRECTIVE: Quarantine source {most_dangerous_ip} immediately and deploy Deep Packet Inspection on perimeter."
-            ],
+            "lines": brief_lines,
             "operation_id": f"AEGIS-{str(uuid.uuid4())[:6].upper()}",
             "generated_at": datetime.now().isoformat(),
             "classification": "CLASSIFIED"

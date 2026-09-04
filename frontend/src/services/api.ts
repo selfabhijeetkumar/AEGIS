@@ -151,6 +151,19 @@ export const getSystemStatus = async (): Promise<SystemStatusResponse> => {
   return data;
 };
 
+export const getGeminiStatus = async (): Promise<{
+  configured: boolean;
+  working: boolean;
+  status: string;
+  model?: string;
+  masked_key?: string | null;
+  message: string;
+  error?: string;
+}> => {
+  const { data } = await api.get('/api/gemini-status');
+  return data;
+};
+
 export const downloadReport = async (scanId: string): Promise<Blob> => {
   const { data } = await api.get(`/api/scan/${scanId}/report`, {
     responseType: 'blob',

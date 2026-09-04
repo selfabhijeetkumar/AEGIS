@@ -1,24 +1,87 @@
 """AEGIS Gemini Service — AI intelligence briefing generation (mock + real)."""
 import os
 import json
-from typing import List
+import logging
+from typing import List, Dict, Any, Optional
 
-# Set to True when Gemini API key is available
-USE_REAL_GEMINI = True
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyB0AHXd8NfIeofhYaGXlM8Cr1ULiM8AGFc")
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    # Also load from parent directory if exists
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+except ImportError:
+    pass
 
+logger = logging.getLogger("aegis.gemini")
+
+def get_gemini_api_key() -> Optional[str]:
+    """Retrieve Gemini API key from environment, stripping quotes and whitespace."""
+    key = os.environ.get("GEMINI_API_KEY")
+    if key:
+        return key.strip().strip("'\"")
+    return None
+
+def check_gemini_status() -> Dict[str, Any]:
+    """Empirically test whether Gemini API key is configured, valid, and responding."""
+    key = get_gemini_api_key()
+    if not key:
+        return {
+            "configured": False,
+            "working": False,
+            "status": "NOT_CONFIGURED",
+            "message": "No GEMINI_API_KEY found in environment or .env file. Running in intelligent fallback mock mode.",
+            "masked_key": None
+        }
+
+    masked = f"{key[:6]}...{key[-4:]}" if len(key) >= 10 else "***"
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=key)
+        
+        # Test model connection
+        model = genai.GenerativeModel("gemini-2.0-flash")
+        response = model.generate_content("Ping. Reply with: PONG")
+        reply = response.text.strip() if response and response.text else "OK"
+        
+        return {
+            "configured": True,
+            "working": True,
+            "status": "ACTIVE",
+            "model": "gemini-2.0-flash",
+            "masked_key": masked,
+            "test_response": reply,
+            "message": "Gemini API authenticated and responding with live generated intelligence."
+        }
+    except Exception as e:
+        err_str = str(e)
+        status_label = "INVALID_KEY" if "API_KEY_INVALID" in err_str or "API key not valid" in err_str else (
+            "QUOTA_EXCEEDED" if "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower() else "ERROR"
+        )
+        return {
+            "configured": True,
+            "working": False,
+            "status": status_label,
+            "masked_key": masked,
+            "error": err_str,
+            "message": f"Gemini API request failed ({status_label}): {err_str}"
+        }
 
 def generate_commander_brief(scan_stats: dict) -> dict:
     """Generate 3-line military-tone commander's brief."""
-    if USE_REAL_GEMINI and GEMINI_API_KEY:
-        return _real_commander_brief(scan_stats)
+    key = get_gemini_api_key()
+    if key:
+        brief = _real_commander_brief(scan_stats, key)
+        if brief and brief.get("lines"):
+            return brief
     return _mock_commander_brief(scan_stats)
-
 
 def generate_threat_explanation(threat: dict, use_mock: bool = False) -> dict:
     """Generate AI explanation + recommended actions for a threat."""
-    if USE_REAL_GEMINI and GEMINI_API_KEY and not use_mock:
-        return _real_threat_explanation(threat)
+    key = get_gemini_api_key()
+    if key and not use_mock:
+        explanation = _real_threat_explanation(threat, key)
+        if explanation and explanation.get("ai_explanation"):
+            return explanation
     return _mock_threat_explanation(threat)
 
 
@@ -197,12 +260,24 @@ MITRE_CODES = {
 }
 
 
-def _real_commander_brief(stats: dict) -> dict:
+def _real_commander_brief(stats: dict, api_key: str) -> dict:
     """Generate real commander's brief using Gemini API."""
     try:
         import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        genai.configure(api_key=api_key)
+        
+        # Try primary model then fallback
+        model = None
+        for model_name in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]:
+            try:
+                model = genai.GenerativeModel(model_name)
+                break
+            except Exception:
+                continue
+
+        if not model:
+            model = genai.GenerativeModel("gemini-2.0-flash")
+
         prompt = f"""You are AEGIS, a military-grade threat intelligence AI. Generate exactly 3 lines for a Commander's Brief based on these scan statistics. Use military tone — precise, factual, urgent. No exclamation points. Each line is one sentence.
 
 Stats: {json.dumps(stats)}
@@ -210,17 +285,30 @@ Stats: {json.dumps(stats)}
 Format: Return exactly 3 lines separated by newlines. No numbering, no bullets."""
         response = model.generate_content(prompt)
         lines = [l.strip() for l in response.text.strip().split("\n") if l.strip()][:3]
-        return {"lines": lines}
-    except Exception:
-        return _mock_commander_brief(stats)
+        if lines:
+            return {"lines": lines}
+    except Exception as e:
+        logger.warning(f"[AEGIS Gemini Brief] API call failed: {e}. Falling back to deterministic brief.")
+    return _mock_commander_brief(stats)
 
 
-def _real_threat_explanation(threat: dict) -> dict:
+def _real_threat_explanation(threat: dict, api_key: str) -> dict:
     """Generate real threat explanation using Gemini API."""
     try:
         import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        genai.configure(api_key=api_key)
+
+        model = None
+        for model_name in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]:
+            try:
+                model = genai.GenerativeModel(model_name)
+                break
+            except Exception:
+                continue
+
+        if not model:
+            model = genai.GenerativeModel("gemini-2.0-flash")
+
         prompt = f"""You are AEGIS threat intelligence AI. Analyze this threat event and provide:
 1. A 4-6 sentence plain English explanation of what happened, why it's suspicious, and potential impact.
 2. A list of 3-4 recommended defensive actions.
@@ -229,6 +317,14 @@ Threat details: {json.dumps(threat)}
 
 Format your response as JSON: {{"ai_explanation": "...", "recommended_actions": ["action1", "action2", ...]}}"""
         response = model.generate_content(prompt)
-        return json.loads(response.text.strip().replace("```json", "").replace("```", ""))
-    except Exception:
-        return _mock_threat_explanation(threat)
+        cleaned = response.text.strip()
+        if "```json" in cleaned:
+            cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+        elif "```" in cleaned:
+            cleaned = cleaned.split("```")[1].split("```")[0].strip()
+        parsed = json.loads(cleaned)
+        if "ai_explanation" in parsed:
+            return parsed
+    except Exception as e:
+        logger.warning(f"[AEGIS Gemini Explanation] API call failed: {e}. Falling back to baseline explanation.")
+    return _mock_threat_explanation(threat)
